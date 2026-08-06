@@ -6,4 +6,11 @@ dist
 
 kingofthehill-backend/
 kingofthehill-frontend/
+src/
+*.json
+vite.config.js
+index.html
+!.gitignore
+!docs/
+
 
