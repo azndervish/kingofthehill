@@ -1,0 +1,35 @@
+.MuiTimelineItem-missingOppositeContent:before {
+    display: none;
+}
+
+.MuiTimeline-root {
+    zoom: 80%;
+    max-height: 180px;
+    overflow-y: scroll;
+    margin: 0;
+    border-bottom: 2px solid #545454;
+
+    &::-webkit-scrollbar {
+        -webkit-appearance: none;
+        width: 12px;
+    }
+    
+    &::-webkit-scrollbar-thumb {
+        border-radius: 4px;
+        background-color: rgba(199, 199, 199, .5);
+        box-shadow: 0 0 1px rgba(255, 255, 255, .5);
+    }
+
+    .MuiTimelineItem-root {
+        min-height: 34px;
+
+        .MuiTimelineDot-root {
+            margin: 0;
+        }
+
+        .MuiTimelineSeparator-root {
+            zoom: 80%;
+            margin-top: 4px;
+        }
+    }
+}

@@ -1,0 +1,21 @@
+.die {
+    margin: 5px;
+
+    label {
+        border: 1px solid;
+        width: 66px;
+        height: 66px;
+        border-radius: 10px;
+
+        .MuiButtonBase-root {
+            padding-top: 0;
+        }
+    }
+}
+
+.section {
+    h3 {
+        text-align: center;
+        margin: 30px 0 8px 0;
+    }
+}

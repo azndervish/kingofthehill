@@ -1,0 +1,10 @@
+node_modules
+dist
+docs
+.DS_Store
+*.log
+.env
+
+kingofthehill-backend/
+kingofthehill-frontend/
+
