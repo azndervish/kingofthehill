@@ -1,0 +1,93 @@
+body {
+  background-color: #444444;
+}
+
+@media only screen and (max-width: 600px) {
+  body {
+    background-color: #ffffff;
+  }
+}
+
+.App {
+  text-align: center;
+}
+
+a {
+  color: #0080FF
+}
+
+.section {
+  margin: 10px 0px;
+}
+
+button {
+  margin: 10px 5px;
+  padding: 10px;
+  font-size: 16px;
+}
+
+button.small {
+  padding: 0px;
+  font-size: 12px;
+}
+
+button.buyItem {
+  margin: 0px 5px;
+}
+
+.item {
+  margin: 5px 0px;
+}
+
+.dead {
+  text-decoration: line-through;
+  margin: 0 4px;
+}
+
+.playerColor0 {
+  color: #ff5050;
+}
+
+.playerColor1 {
+  color: #13b713;
+}
+
+.playerColor2 {
+  color: #8787ff;
+}
+
+.playerColor3 {
+  color: #BADA55;
+}
+
+.playerColor4 {
+  color: #FF00FF
+}
+
+.playerColor5 {
+  color: #00FFFF
+}
+
+.playerColor6 {
+  color: #CC0000
+}
+
+.playerColor7 {
+  color: #00CC00
+}
+
+.playerColor8 {
+  color: #0000CC
+}
+
+.playerColor9 {
+  color: #CCCC00
+}
+
+.playerColor10 {
+  color: #CC00CC
+}
+
+.playerColor11 {
+  color: #00CCCC
+}
