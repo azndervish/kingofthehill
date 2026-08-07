@@ -9,4 +9,5 @@ kingofthehill-backend/
 kingofthehill-frontend/
 
 src/log.js
+test-*.js
 
