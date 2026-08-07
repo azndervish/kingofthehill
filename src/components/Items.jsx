@@ -14,6 +14,9 @@ export default function(props) {
     const itemsForSale = saleItem.map( (it, index) => {
         const key = `sale_time_${index}`
         const fullItem = props.items[it]
+        if (!fullItem) {
+            return null
+        }
         const canBuy = myPlayer !== undefined ? myPlayer.money >= fullItem.cost : false
 
         const button = (
