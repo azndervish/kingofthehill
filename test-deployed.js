@@ -18,12 +18,19 @@ async function testLocal() {
   await page.click('button:has-text("Start Game")');
   
   console.log('Waiting for game to load...');
-  await page.waitForTimeout(3000);
+  await page.waitForTimeout(5000);
   
   const bodyClass = await page.evaluate(() => document.body.className);
   console.log('Body class:', bodyClass);
   
-  if (bodyClass.includes('white') || bodyClass === '') {
+  const gameElements = await page.$$('div.game-component');
+  console.log('Found', gameElements.length, 'game-component elements');
+  
+  const html = await page.evaluate(() => document.body.innerHTML);
+  console.log('Body HTML length:', html.length);
+  console.log('Body HTML (first 500 chars):', html.substring(0, 500));
+  
+  if (bodyClass.includes('white') || bodyClass === '' || html.length < 100) {
     console.log('WARNING: Screen appears to be white - potential rendering issue');
   }
   

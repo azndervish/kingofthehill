@@ -2,6 +2,41 @@ import gameLogTemplates from './gameLogTemplates.js'
 import bot from './bot.js'
 import { uid } from 'uid'
 
+// Explicitly import all item modules
+import alphamonster from '../items/alphamonster.js'
+import apartmentbuilding from '../items/apartmentbuilding.js'
+import commutertrain from '../items/commutertrain.js'
+import completedestruction from '../items/completedestruction.js'
+import cornerstore from '../items/cornerstore.js'
+import deathfromabove from '../items/deathfromabove.js'
+import dedicatednewsteam from '../items/dedicatednewsteam.js'
+import energize from '../items/energize.js'
+import energyhoarder from '../items/energyhoarder.js'
+import evacuationorders from '../items/evacuationorders.js'
+import evenbigger from '../items/evenbigger.js'
+import extrahead from '../items/extrahead.js'
+import extrahead2 from '../items/extrahead2.js'
+import fireblast from '../items/fireblast.js'
+import frenzy from '../items/frenzy.js'
+import gasrefinery from '../items/gasrefinery.js'
+import giantbrain from '../items/giantbrain.js'
+import gourmet from '../items/gourmet.js'
+import heal from '../items/heal.js'
+import highaltitudebombing from '../items/highaltitudebombing.js'
+import jetfighters from '../items/jetfighters.js'
+import nationalguard from '../items/nationalguard.js'
+import novabreath from '../items/novabreath.js'
+import nuclearpowerplant from '../items/nuclearpowerplant.js'
+import omnivore from '../items/omnivore.js'
+import poisonquills from '../items/poisonquills.js'
+import rootingfortheunderdog from '../items/rootingfortheunderdog.js'
+import skyscraper from '../items/skyscraper.js'
+import solarpowered from '../items/solarpowered.js'
+import spikedtail from '../items/spikedtail.js'
+import sweep from '../items/sweep.js'
+import tanks from '../items/tanks.js'
+import vaststorm from '../items/vaststorm.js'
+
 const INIT_HEALTH = 10
 const MAX_DICE = 6
 const DICE_MAP = ['A', 'H', '$', '1', '2', '3']
@@ -37,23 +72,39 @@ export default {
     loadItems,
     
     async initializeItems() {
-        const itemModules = import.meta.glob('./items/*.js')
-        for (const path in itemModules) {
-            const module = await itemModules[path]()
-            const itemName = path.replace('./items/', '').replace('.js', '')
-            ITEMS[itemName] = module.default
-        }
-        ITEMS['sweep'] = {
-            name: 'Sweep',
-            description: 'Discard all items for sale and draw new items',
-            cost: 2,
-            type: 'discard',
-            discard: function(game, playerIndex, engineModule) {
-                game.item.discard = game.item.discard.concat(game.item.sale)
-                game.item.sale = []
-                return game
-            }
-        }
+        ITEMS['alphamonster'] = alphamonster.default
+        ITEMS['apartmentbuilding'] = apartmentbuilding.default
+        ITEMS['commutertrain'] = commutertrain.default
+        ITEMS['completedestruction'] = completedestruction.default
+        ITEMS['cornerstore'] = cornerstore.default
+        ITEMS['deathfromabove'] = deathfromabove.default
+        ITEMS['dedicatednewsteam'] = dedicatednewsteam.default
+        ITEMS['energize'] = energize.default
+        ITEMS['energyhoarder'] = energyhoarder.default
+        ITEMS['evacuationorders'] = evacuationorders.default
+        ITEMS['evenbigger'] = evenbigger.default
+        ITEMS['extrahead'] = extrahead.default
+        ITEMS['extrahead2'] = extrahead2.default
+        ITEMS['fireblast'] = fireblast.default
+        ITEMS['frenzy'] = frenzy.default
+        ITEMS['gasrefinery'] = gasrefinery.default
+        ITEMS['giantbrain'] = giantbrain.default
+        ITEMS['gourmet'] = gourmet.default
+        ITEMS['heal'] = heal.default
+        ITEMS['highaltitudebombing'] = highaltitudebombing.default
+        ITEMS['jetfighters'] = jetfighters.default
+        ITEMS['nationalguard'] = nationalguard.default
+        ITEMS['novabreath'] = novabreath.default
+        ITEMS['nuclearpowerplant'] = nuclearpowerplant.default
+        ITEMS['omnivore'] = omnivore.default
+        ITEMS['poisonquills'] = poisonquills.default
+        ITEMS['rootingfortheunderdog'] = rootingfortheunderdog.default
+        ITEMS['skyscraper'] = skyscraper.default
+        ITEMS['solarpowered'] = solarpowered.default
+        ITEMS['spikedtail'] = spikedtail.default
+        ITEMS['sweep'] = sweep.default
+        ITEMS['tanks'] = tanks.default
+        ITEMS['vaststorm'] = vaststorm.default
     },
     
     createGame: function(players) {
