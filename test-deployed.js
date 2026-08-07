@@ -1,26 +1,33 @@
-import { chromium } from 'playwright';
+import { firefox } from 'playwright';
 
-async function testDeployed() {
-  const browser = await chromium.launch({ headless: true });
+async function testLocal() {
+  const browser = await firefox.launch({ headless: true });
   const context = await browser.newContext();
   const page = await context.newPage();
   
-  console.log('Navigating to https://azndervish.github.io/kingofthehill/');
-  await page.goto('https://azndervish.github.io/kingofthehill/');
+  page.on('console', msg => console.log('Browser console:', msg.text()));
+  page.on('pageerror', err => console.log('Page error:', err));
   
-  console.log('Waiting for "Join Game" button...');
-  await page.waitForSelector('text=Join Game');
+  console.log('Navigating to http://localhost:5173/kingofthehill/');
+  await page.goto('http://localhost:5173/kingofthehill/');
+  
+  console.log('Waiting for "Start Game" button...');
+  await page.waitForSelector('button:has-text("Start Game")');
   
   console.log('Clicking "Start Game" button...');
-  await page.click('text=Start Game');
+  await page.click('button:has-text("Start Game")');
   
   console.log('Waiting for game to load...');
-  await page.waitForSelector('text=Game Over', { timeout: 10000 }).catch(() => {
-    console.log('Game loaded successfully (no timeout)');
-  });
+  await page.waitForTimeout(3000);
   
-  console.log('Test passed!');
+  const bodyClass = await page.evaluate(() => document.body.className);
+  console.log('Body class:', bodyClass);
+  
+  if (bodyClass.includes('white') || bodyClass === '') {
+    console.log('WARNING: Screen appears to be white - potential rendering issue');
+  }
+  
   await browser.close();
 }
 
-testDeployed().catch(console.error);
+testLocal().catch(console.error);

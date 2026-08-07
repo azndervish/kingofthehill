@@ -1,4 +1,4 @@
-const log = require('../log')('energize')
+import log from '../log.js'('energize')
 export default {
     name: 'Energize',
     description: 'Gain $9',

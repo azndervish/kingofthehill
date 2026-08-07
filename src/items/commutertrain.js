@@ -1,4 +1,4 @@
-const log = require('../log')('commutertrain')
+import log from '../log.js'('commutertrain')
 export default {
     name: 'Commuter Train',
     description: 'Gain 2 points',

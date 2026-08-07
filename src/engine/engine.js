@@ -43,6 +43,17 @@ export default {
             const itemName = path.replace('./items/', '').replace('.js', '')
             ITEMS[itemName] = module.default
         }
+        ITEMS['sweep'] = {
+            name: 'Sweep',
+            description: 'Discard all items for sale and draw new items',
+            cost: 2,
+            type: 'discard',
+            discard: function(game, playerIndex, engineModule) {
+                game.item.discard = game.item.discard.concat(game.item.sale)
+                game.item.sale = []
+                return game
+            }
+        }
     },
     
     createGame: function(players) {

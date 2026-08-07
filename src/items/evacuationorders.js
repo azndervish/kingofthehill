@@ -1,4 +1,4 @@
-const log = require('../log')('evacuationorders')
+import log from '../log.js'('evacuationorders')
 export default {
     name: 'Evacuation Orders',
     description: 'All other players lose 5 points',
