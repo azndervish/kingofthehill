@@ -1,16 +1,12 @@
 node_modules
 dist
+docs
 .DS_Store
 *.log
 .env
 
 kingofthehill-backend/
 kingofthehill-frontend/
-src/
-*.json
-vite.config.js
-index.html
-!.gitignore
-!docs/
 
+src/log.js
 
