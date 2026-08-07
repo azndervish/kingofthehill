@@ -20,13 +20,19 @@ function App() {
   const [items, setItems] = useState({})
 
   useEffect(() => {
-    engine.initializeItems().then(() => {
+    const loadItems = async () => {
+      await engine.initializeItems()
       console.log('Engine ITEMS after loading:', Object.keys(engine.ITEMS).length, 'items')
       setItems({ ...engine.ITEMS })
-    })
+    }
+    loadItems()
   }, [])
 
   const handleStartGame = async (players) => {
+    if (Object.keys(items).length === 0) {
+      await engine.initializeItems()
+      setItems({ ...engine.ITEMS })
+    }
     const game = engine.createGame(players)
     const startedGame = engine.nextTurn(game)
     setGameState(startedGame)
