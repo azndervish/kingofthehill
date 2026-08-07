@@ -105,6 +105,7 @@ export default {
         ITEMS['sweep'] = sweep.default
         ITEMS['tanks'] = tanks.default
         ITEMS['vaststorm'] = vaststorm.default
+        console.log('Items loaded:', Object.keys(ITEMS).length, 'items')
     },
     
     createGame: function(players) {

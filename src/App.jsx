@@ -21,6 +21,7 @@ function App() {
 
   useEffect(() => {
     engine.initializeItems().then(() => {
+      console.log('Engine ITEMS after loading:', Object.keys(engine.ITEMS).length, 'items')
       setItems({ ...engine.ITEMS })
     })
   }, [])
