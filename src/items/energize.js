@@ -1,4 +1,5 @@
-import log from '../log.js'('energize')
+import log from '../log.js'
+const logInstance = log('energize')
 export default {
     name: 'Energize',
     description: 'Gain $9',

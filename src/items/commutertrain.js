@@ -1,4 +1,5 @@
-import log from '../log.js'('commutertrain')
+import log from '../log.js'
+const logInstance = log('commutertrain')
 export default {
     name: 'Commuter Train',
     description: 'Gain 2 points',

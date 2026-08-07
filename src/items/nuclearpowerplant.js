@@ -1,4 +1,5 @@
-import log from '../log.js'('nuclearpowerplant')
+import log from '../log.js'
+const logInstance = log('nuclearpowerplant')
 export default {
     name: 'Nuclear Power Plant',
     description: 'Gain 2 points and heal 3 damage',

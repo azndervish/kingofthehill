@@ -1,4 +1,5 @@
-import log from '../log.js'('jetfighters')
+import log from '../log.js'
+const logInstance = log('jetfighters')
 export default {
     name: 'Jet Fighters',
     description: 'Gain 5 points and take 4 damage',
