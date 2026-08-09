@@ -47,6 +47,31 @@ const NUM_ITEMS_FOR_SALE = 3
 
 const ITEMS = {}
 
+let _seed = null
+let _rng = null
+
+function hashSeed(str) {
+    let h = 0
+    for (let i = 0; i < str.length; i++) {
+        h = Math.imul(31, h) + str.charCodeAt(i) | 0
+    }
+    return h
+}
+
+function mulberry32(a) {
+    return function() {
+        let t = a += 0x6D2B79F5
+        t = Math.imul(t ^ t >>> 15, t | 1)
+        t ^= t + Math.imul(t ^ t >>> 7, t | 61)
+        return ((t ^ t >>> 14) >>> 0) / 4294967296
+    }
+}
+
+function seededRandom() {
+    if (_rng) return _rng()
+    return Math.random()
+}
+
 function applyScoreBonus(baseValue, totalRolls) {
     const MIN_SCORE_ROLL = 3
     if(totalRolls >= MIN_SCORE_ROLL) {
@@ -70,6 +95,23 @@ export default {
     PHASE_BUY: 'PHASE_BUY',
     uid,
     loadItems,
+    getSeed() { return _seed },
+    setSeed(seed) {
+        if (seed == null || seed === '') {
+            _seed = null
+            _rng = null
+            return
+        }
+        const str = String(seed)
+        _seed = str
+        const num = /^-?\d+$/.test(str) ? parseInt(str, 10) : hashSeed(str)
+        _rng = mulberry32(num)
+    },
+    resetSeed() {
+        _seed = null
+        _rng = null
+    },
+    _random: seededRandom,
     
     async initializeItems() {
         ITEMS['alphamonster'] = alphamonster.default
@@ -181,7 +223,7 @@ export default {
     roll: function(numDice) {
         let rollResult = []
         for(let i = 0; i < numDice; i++) {
-            rollResult.push(DICE_MAP[Math.floor(Math.random()*DICE_MAP.length)])
+            rollResult.push(DICE_MAP[Math.floor(seededRandom()*DICE_MAP.length)])
         }
         return rollResult
     },
@@ -497,7 +539,7 @@ export default {
     
     shuffle: function(list) {
         for(let index = 0; index < list.length; index++) {
-            const randomIndex = Math.floor(Math.random()*(list.length-index))+index
+            const randomIndex = Math.floor(seededRandom()*(list.length-index))+index
             const currentItem = list[index]
             list[index] = list[randomIndex]
             list[randomIndex] = currentItem

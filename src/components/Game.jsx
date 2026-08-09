@@ -55,7 +55,10 @@ class GameComponent extends Component {
         if(prevProps.game.uid !== this.props.game.uid) {
             if(this.props.game.currentPlayer && this.isHumanTurn(this.props.game)) {
                 if(this.props.game.phase === PHASE_ROLL) {
-                    this.initDiceState(this.props.game)
+                    // only auto-select all on new turn (usedRerolls === 0), not after a reroll
+                    if(this.props.game.currentPlayer.usedRerolls === 0) {
+                        this.initDiceState(this.props.game)
+                    }
                 }
             }
             this.checkBotTurn(this.props.game)
@@ -288,7 +291,9 @@ class GameComponent extends Component {
         }, [])
         
         const updatedGame = engine.reroll(game, humanPlayer.sub, diceToKeep)
-        this.setState({ awaitUpdate: true })
+        // front-concat moves held dice to 0..K-1, so update UI selection to match
+        const newKeep = Array(diceToKeep.length).fill(true).concat(Array(game.currentPlayer.roll.length - diceToKeep.length).fill(false))
+        this.setState({ awaitUpdate: true, diceToKeep: newKeep })
         
         setTimeout(() => {
             this.props.onGameUpdate(updatedGame)
