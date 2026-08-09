@@ -114,39 +114,39 @@ export default {
     _random: seededRandom,
     
     async initializeItems() {
-        ITEMS['alphamonster'] = alphamonster.default
-        ITEMS['apartmentbuilding'] = apartmentbuilding.default
-        ITEMS['commutertrain'] = commutertrain.default
-        ITEMS['completedestruction'] = completedestruction.default
-        ITEMS['cornerstore'] = cornerstore.default
-        ITEMS['deathfromabove'] = deathfromabove.default
-        ITEMS['dedicatednewsteam'] = dedicatednewsteam.default
-        ITEMS['energize'] = energize.default
-        ITEMS['energyhoarder'] = energyhoarder.default
-        ITEMS['evacuationorders'] = evacuationorders.default
-        ITEMS['evenbigger'] = evenbigger.default
-        ITEMS['extrahead'] = extrahead.default
-        ITEMS['extrahead2'] = extrahead2.default
-        ITEMS['fireblast'] = fireblast.default
-        ITEMS['frenzy'] = frenzy.default
-        ITEMS['gasrefinery'] = gasrefinery.default
-        ITEMS['giantbrain'] = giantbrain.default
-        ITEMS['gourmet'] = gourmet.default
-        ITEMS['heal'] = heal.default
-        ITEMS['highaltitudebombing'] = highaltitudebombing.default
-        ITEMS['jetfighters'] = jetfighters.default
-        ITEMS['nationalguard'] = nationalguard.default
-        ITEMS['novabreath'] = novabreath.default
-        ITEMS['nuclearpowerplant'] = nuclearpowerplant.default
-        ITEMS['omnivore'] = omnivore.default
-        ITEMS['poisonquills'] = poisonquills.default
-        ITEMS['rootingfortheunderdog'] = rootingfortheunderdog.default
-        ITEMS['skyscraper'] = skyscraper.default
-        ITEMS['solarpowered'] = solarpowered.default
-        ITEMS['spikedtail'] = spikedtail.default
-        ITEMS['sweep'] = sweep.default
-        ITEMS['tanks'] = tanks.default
-        ITEMS['vaststorm'] = vaststorm.default
+        ITEMS['alphamonster'] = alphamonster.default || alphamonster
+        ITEMS['apartmentbuilding'] = apartmentbuilding.default || apartmentbuilding
+        ITEMS['commutertrain'] = commutertrain.default || commutertrain
+        ITEMS['completedestruction'] = completedestruction.default || completedestruction
+        ITEMS['cornerstore'] = cornerstore.default || cornerstore
+        ITEMS['deathfromabove'] = deathfromabove.default || deathfromabove
+        ITEMS['dedicatednewsteam'] = dedicatednewsteam.default || dedicatednewsteam
+        ITEMS['energize'] = energize.default || energize
+        ITEMS['energyhoarder'] = energyhoarder.default || energyhoarder
+        ITEMS['evacuationorders'] = evacuationorders.default || evacuationorders
+        ITEMS['evenbigger'] = evenbigger.default || evenbigger
+        ITEMS['extrahead'] = extrahead.default || extrahead
+        ITEMS['extrahead2'] = extrahead2.default || extrahead2
+        ITEMS['fireblast'] = fireblast.default || fireblast
+        ITEMS['frenzy'] = frenzy.default || frenzy
+        ITEMS['gasrefinery'] = gasrefinery.default || gasrefinery
+        ITEMS['giantbrain'] = giantbrain.default || giantbrain
+        ITEMS['gourmet'] = gourmet.default || gourmet
+        ITEMS['heal'] = heal.default || heal
+        ITEMS['highaltitudebombing'] = highaltitudebombing.default || highaltitudebombing
+        ITEMS['jetfighters'] = jetfighters.default || jetfighters
+        ITEMS['nationalguard'] = nationalguard.default || nationalguard
+        ITEMS['novabreath'] = novabreath.default || novabreath
+        ITEMS['nuclearpowerplant'] = nuclearpowerplant.default || nuclearpowerplant
+        ITEMS['omnivore'] = omnivore.default || omnivore
+        ITEMS['poisonquills'] = poisonquills.default || poisonquills
+        ITEMS['rootingfortheunderdog'] = rootingfortheunderdog.default || rootingfortheunderdog
+        ITEMS['skyscraper'] = skyscraper.default || skyscraper
+        ITEMS['solarpowered'] = solarpowered.default || solarpowered
+        ITEMS['spikedtail'] = spikedtail.default || spikedtail
+        ITEMS['sweep'] = sweep.default || sweep
+        ITEMS['tanks'] = tanks.default || tanks
+        ITEMS['vaststorm'] = vaststorm.default || vaststorm
         console.log('Items loaded:', Object.keys(ITEMS).length, 'items')
     },
     
