@@ -50,7 +50,7 @@ function App() {
     }
     const game = engine.createGame(players)
     const startedGame = engine.nextTurn(game)
-    setGameState(startedGame)
+    setGameState({ ...startedGame, item: { ...startedGame.item }, currentPlayer: startedGame.currentPlayer ? { ...startedGame.currentPlayer } : null })
   }
 
   const handlePlayAgain = () => {

@@ -200,20 +200,26 @@ class GameComponent extends Component {
                         </span>
                     )
                 })
+                const totalRerolls = engine.getTotalRerolls(game, game.currentPlayer.playerIndex)
+                const rerollsLeft = totalRerolls - game.currentPlayer.usedRerolls
+                const canReroll = rerollsLeft > 0
                 return (
                     <Grid container direction="column" alignItems="center">
                         <Grid item container justify="center" wrap="wrap">
                             {currentHand}
                         </Grid>
+                        <Typography variant="caption" style={{marginTop: 4}}>
+                            {canReroll ? `${rerollsLeft} reroll${rerollsLeft===1?'':'s'} left` : 'No rerolls left — keeping all dice'}
+                        </Typography>
                         <Box mt="10px">
                             <Button
-                                disabled={this.state.awaitUpdate} 
+                                disabled={this.state.awaitUpdate || !canReroll} 
                                 onClick={this.handleReroll}
                                 variant="contained"
                                 color="primary"
                                 style={{'marginRight': '36px'}}
                             >
-                                Reroll Unchecked
+                                {canReroll ? `Reroll Unchecked (${rerollsLeft})` : 'No rerolls left'}
                             </Button>
                             <Button
                                 disabled={this.state.awaitUpdate} 
@@ -269,7 +275,8 @@ class GameComponent extends Component {
                 onUpdateStrategy={(strategy, threshold) => {
                     const playerSub = humanPlayer.sub
                     const updatedGame = engine.updateHillStrategy(game, playerSub, strategy, threshold)
-                    this.props.onGameUpdate(updatedGame)
+                    const nextGame = { ...updatedGame }
+                    this.props.onGameUpdate(nextGame)
                 }}/>)
     }
 
@@ -291,24 +298,40 @@ class GameComponent extends Component {
             return acc
         }, [])
         
+        // Guard: if no rerolls left or reroll not allowed, do nothing (button should be disabled)
+        if (!engine.canReroll(game, humanPlayer.sub, diceToKeep)) {
+            return
+        }
+        
         const updatedGame = engine.reroll(game, humanPlayer.sub, diceToKeep)
+        const rerollGame = { ...updatedGame, item: { ...updatedGame.item }, currentPlayer: { ...updatedGame.currentPlayer } }
         // front-concat moves held dice to 0..K-1, so update UI selection to match
         const newKeep = Array(diceToKeep.length).fill(true).concat(Array(game.currentPlayer.roll.length - diceToKeep.length).fill(false))
         this.setState({ awaitUpdate: true, diceToKeep: newKeep })
         
         setTimeout(() => {
-            this.props.onGameUpdate(updatedGame)
+            this.props.onGameUpdate(rerollGame)
             this.setState({ awaitUpdate: false })
+            // After last reroll, auto-apply as if all dice held (keep all)
+            const total = engine.getTotalRerolls(rerollGame, rerollGame.currentPlayer.playerIndex)
+            if (rerollGame.currentPlayer.usedRerolls >= total) {
+                setTimeout(() => {
+                    const applied = engine.applyRoll(rerollGame)
+                    const appliedGame = { ...applied, item: { ...applied.item }, currentPlayer: applied.currentPlayer ? { ...applied.currentPlayer } : null }
+                    this.props.onGameUpdate(appliedGame)
+                }, 350)
+            }
         }, 100)
     }
 
     handleApplyRoll() {
         const game = this.props.game
         const updatedGame = engine.applyRoll(game)
+        const appliedGame = { ...updatedGame, item: { ...updatedGame.item }, currentPlayer: updatedGame.currentPlayer ? { ...updatedGame.currentPlayer } : null }
         this.setState({ awaitUpdate: true })
         
         setTimeout(() => {
-            this.props.onGameUpdate(updatedGame)
+            this.props.onGameUpdate(appliedGame)
             this.setState({ awaitUpdate: false })
         }, 100)
     }
@@ -316,10 +339,12 @@ class GameComponent extends Component {
     handleNextTurn() {
         const game = this.props.game
         const updatedGame = engine.nextTurn(game)
-        this.setState({ awaitUpdate: true })
+        // Force new object reference so React detects change (engine mutates in place)
+        const nextGame = { ...updatedGame, item: { ...updatedGame.item }, currentPlayer: updatedGame.currentPlayer ? { ...updatedGame.currentPlayer } : null }
+        this.setState({ awaitUpdate: true, diceToKeep: updatedGame.currentPlayer ? reinitDice(updatedGame.currentPlayer) : [] })
         
         setTimeout(() => {
-            this.props.onGameUpdate(updatedGame)
+            this.props.onGameUpdate(nextGame)
             this.setState({ awaitUpdate: false })
         }, 100)
     }
@@ -328,10 +353,11 @@ class GameComponent extends Component {
         const game = this.props.game
         const humanPlayer = game.players.find(p => !p.bot)
         const updatedGame = engine.buy(game, itemName, humanPlayer.sub)
+        const buyGame = { ...updatedGame, item: { ...updatedGame.item } }
         this.setState({ awaitUpdate: true })
         
         setTimeout(() => {
-            this.props.onGameUpdate(updatedGame)
+            this.props.onGameUpdate(buyGame)
             this.setState({ awaitUpdate: false })
         }, 100)
     }
