@@ -17,15 +17,19 @@ test.describe('dice hold (reroll) bug', () => {
     // After fix: state false matches UI false, first click false->true => checked.
     for (let i = 0; i < 6; i++) {
       await expect(boxes.nth(i)).not.toBeChecked();
+      const visual = await page.evaluate((idx) => document.querySelectorAll('.die')[idx].innerHTML.includes('Mui-checked'), i);
+      expect(visual).toBe(false);
     }
 
-    // Click die 2 – must become checked on FIRST click
+    // Click die 2 – must become checked on FIRST click (visually and DOM)
     await page.locator('.die').nth(2).click();
     await expect(boxes.nth(2)).toBeChecked();
+    expect(await page.evaluate(() => document.querySelectorAll('.die')[2].innerHTML.includes('Mui-checked'))).toBe(true);
 
     // Second click should uncheck again (round-trip)
     await page.locator('.die').nth(2).click();
     await expect(boxes.nth(2)).not.toBeChecked();
+    expect(await page.evaluate(() => document.querySelectorAll('.die')[2].innerHTML.includes('Mui-checked'))).toBe(false);
   });
 
   test('Reroll Unchecked with no holds must reroll (not silently keep all)', async ({ page }) => {
@@ -92,6 +96,48 @@ test.describe('dice hold (reroll) bug', () => {
     expect(afterChecks[1]).toBe(true);
     // Unheld positions must be unchecked
     for (let i = 2; i < 6; i++) expect(afterChecks[i]).toBe(false);
+
+    // Visual Mui-checked must match DOM checked (catches key-reuse bug where
+    // input.checked is correct but Mui-checked class sticks to old index)
+    const visualChecks = await page.evaluate(() =>
+      Array.from(document.querySelectorAll('.die')).map(el => el.innerHTML.includes('Mui-checked'))
+    );
+    for (let i = 0; i < 6; i++) expect(visualChecks[i]).toBe(afterChecks[i]);
+  });
+
+  test('hold single die 4 → after reroll die 0 shows checked and die 4 unchecked (visual sync)', async ({ page }) => {
+    await page.goto(`./?seed=hold-single-4-${seed}`);
+    await page.getByRole('button', { name: 'Start Game' }).click();
+    await expect(page.locator('.die')).toHaveCount(6);
+    const dice = page.locator('.die');
+    const boxes = page.locator('.die input[type="checkbox"]');
+    for (let i = 0; i < 6; i++) await expect(boxes.nth(i)).not.toBeChecked();
+
+    const beforeTexts = (await dice.allTextContents()).map(t => t.trim());
+    const holdVal = beforeTexts[4];
+    await dice.nth(4).click();
+    await expect(boxes.nth(4)).toBeChecked();
+    expect(await page.evaluate(() => document.querySelectorAll('.die')[4].innerHTML.includes('Mui-checked'))).toBe(true);
+
+    await page.getByRole('button', { name: 'Reroll Unchecked' }).click();
+    await page.waitForTimeout(300);
+
+    const afterTexts = (await dice.allTextContents()).map(t => t.trim());
+    expect(afterTexts[0]).toBe(holdVal);
+    // Die 0 must be checked visually and DOM, die 4 must be unchecked
+    await expect(boxes.nth(0)).toBeChecked();
+    await expect(boxes.nth(4)).not.toBeChecked();
+    expect(await page.evaluate(() => document.querySelectorAll('.die')[0].innerHTML.includes('Mui-checked'))).toBe(true);
+    expect(await page.evaluate(() => document.querySelectorAll('.die')[4].innerHTML.includes('Mui-checked'))).toBe(false);
+
+    // First click on die 0 must uncheck (not require two clicks)
+    await dice.nth(0).click();
+    await expect(boxes.nth(0)).not.toBeChecked();
+    expect(await page.evaluate(() => document.querySelectorAll('.die')[0].innerHTML.includes('Mui-checked'))).toBe(false);
+    // First click on die 4 must check
+    await dice.nth(4).click();
+    await expect(boxes.nth(4)).toBeChecked();
+    expect(await page.evaluate(() => document.querySelectorAll('.die')[4].innerHTML.includes('Mui-checked'))).toBe(true);
   });
 
   test('second reroll keeps previous holds at front', async ({ page }) => {
@@ -107,6 +153,8 @@ test.describe('dice hold (reroll) bug', () => {
     await page.waitForTimeout(300);
     // After first reroll, held die should be at 0 and stay checked
     await expect(boxes.nth(0)).toBeChecked();
+    const visual1 = await page.evaluate(() => Array.from(document.querySelectorAll('.die')).map(el => el.innerHTML.includes('Mui-checked')));
+    expect(visual1[0]).toBe(true);
     // Hold an additional die (now at index 2) and reroll again
     await dice.nth(2).click();
     await expect(boxes.nth(2)).toBeChecked();

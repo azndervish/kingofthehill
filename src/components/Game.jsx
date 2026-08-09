@@ -185,14 +185,15 @@ class GameComponent extends Component {
         if(this.isHumanTurn(game) && !game.over) {
             if(game.phase === PHASE_ROLL) {
                 const currentHand = game.currentPlayer.roll.map((die, dieNum) => {
-                    const key = `hand_die${dieNum}`
-                    const isChecked = this.state.diceToKeep[dieNum]
+                    const isChecked = !!this.state.diceToKeep[dieNum]
+                    const key = `hand_die${dieNum}-${die}-${isChecked ? 'keep' : 'reroll'}`
                     return (
                         <span className="die" key={key} onClick={() => {
                             this.handleKeepDiceUpdate(dieNum)
                         }}>
                             <FormControlLabel
-                                control={<Checkbox checked={isChecked} readOnly/>}
+                                key={`${key}-label`}
+                                control={<Checkbox key={`${key}-cb`} checked={isChecked} readOnly/>}
                                 label={die}
                                 labelPlacement="top"
                             />
