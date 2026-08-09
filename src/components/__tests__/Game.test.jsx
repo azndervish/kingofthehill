@@ -28,15 +28,12 @@ describe('Game', () => {
     const ref = React.createRef()
     const onGameUpdate = vi.fn()
     const { container } = render(React.createElement(Game, { ref, game, items:{}, onGameUpdate, onPlayAgain:vi.fn() }))
-    // initial diceToKeep is all true after mount, toggle to keep only indices 2 and 4
-    // click dice 0,1,3,5 to uncheck them (keep 2,4)
+    // initial diceToKeep is all false after mount, toggle to keep only indices 2 and 4
     const diceSpans = container.querySelectorAll('.die')
     // diceSpans[0] corresponds to roll[0]='A', etc.
-    // toggle off 0,1,3,5
-    diceSpans[0].click()
-    diceSpans[1].click()
-    diceSpans[3].click()
-    diceSpans[5].click()
+    // toggle on 2,4 to keep them
+    diceSpans[2].click()
+    diceSpans[4].click()
     // now diceToKeep should be [F,F,T,F,T,F]
     expect(ref.current.state.diceToKeep).toEqual([false,false,true,false,true,false])
     // click reroll

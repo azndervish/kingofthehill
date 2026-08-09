@@ -343,7 +343,7 @@ class GameComponent extends Component {
 function reinitDice(currentPlayer) {
     let diceToKeep = []
     for(let i = 0; i < currentPlayer.roll.length; i++) {
-        diceToKeep.push(true)
+        diceToKeep.push(false)
     }
     return diceToKeep
 }
