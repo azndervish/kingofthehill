@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>02 — Timeline Scrubber</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{--paper:#f4f1ea;--ink:#11110f;--line:#1a1a1a;--red:#e61c1c;--yellow:#ffd600;--muted:#6b6b63}
+  body{font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background:var(--paper); color:var(--ink); min-height:100vh}
+  .bar{max-width:1100px;margin:0 auto;padding:18px 20px 0;display:flex;justify-content:space-between;align-items:end;gap:16px;border-bottom:3px solid var(--line);padding-bottom:12px}
+  .bar h1{font-size:28px;font-weight:800;letter-spacing:-.03em;line-height:.9}
+  .bar h1 em{font-weight:400;font-style:normal;font-size:12px;letter-spacing:.06em;text-transform:uppercase;background:var(--yellow);padding:2px 6px;margin-left:8px;vertical-align:middle}
+  .bar .meta{font-family: ui-monospace, monospace;font-size:11px;letter-spacing:.06em;text-align:right}
+  .wrap{max-width:1100px;margin:0 auto;padding:16px 20px 28px;display:grid;grid-template-columns: 1.15fr .85fr;gap:18px}
+  @media(max-width:880px){.wrap{grid-template-columns:1fr}}
+  .board{border:2px solid var(--line);background:#fff}
+  .board-head{padding:10px 12px;display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid var(--line);background: var(--yellow)}
+  .board-head h2{font-size:11px;letter-spacing:.12em;text-transform:uppercase}
+  .board-head .phase{font-family:ui-monospace,monospace;font-size:11px;background:var(--line);color:#fff;padding:3px 7px}
+  /* rails */
+  .rails{padding:14px 12px 10px;display:grid;gap:12px}
+  .rail{border:1.5px solid var(--line);position:relative;background:#fff}
+  .rail-head{display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1.5px solid var(--line);font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:800}
+  .rail-head span:last-child{margin-left:auto;font-family:ui-monospace,monospace;font-weight:400;letter-spacing:0;text-transform:none;font-size:11px}
+  .hold-rail .rail-head{background: var(--line); color:#fff}
+  .reroll-rail .rail-head{background: #fff; color:var(--ink)}
+  .reroll-rail{border-style:dashed}
+  .rail-grid{display:flex;flex-wrap:wrap;gap:10px;padding:12px;min-height:84px;background: repeating-linear-gradient(90deg, transparent 0 18px, rgba(0,0,0,.04) 18px 19px)}
+  .reroll-rail .rail-grid{background: repeating-linear-gradient(-45deg, #fff 0 10px, #f7f7f3 10px 20px)}
+  .die{width:66px;height:66px;border:1.5px solid var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;background:#fff;position:relative}
+  .die .face{font-size:26px;font-weight:900;line-height:1}
+  .die .sub{font-family:ui-monospace,monospace;font-size:9px;letter-spacing:.08em;margin-top:2px}
+  .die.held{background: var(--line); color:#fff}
+  .die.held .sub{opacity:.7}
+  .die.to-reroll{background:#fff; color:var(--ink)}
+  .die.to-reroll::before{content:"";position:absolute;inset:3px;border:1px dashed var(--red);pointer-events:none}
+  .die.rattling{animation:rattle .32s linear infinite}
+  @keyframes rattle{0%{transform:translate(0,0) rotate(0)}25%{transform:translate(1px,-1px) rotate(.6deg)}50%{transform:translate(-1px,1px) rotate(-.6deg)}75%{transform:translate(1px,0) rotate(.4deg)}100%{transform:translate(0,0)}}
+  .controls{display:flex;gap:10px;padding:12px;border-top:2px solid var(--line);background:#f4f1ea;flex-wrap:wrap;align-items:center}
+  .btn{appearance:none;border:1.5px solid var(--line);padding:9px 14px;font-weight:800;font-size:13px;cursor:pointer;letter-spacing:.01em}
+  .btn.primary{background:var(--red);color:#fff}
+  .btn.ghost{background:#fff;color:var(--ink)}
+  .btn:disabled{opacity:.35;cursor:not-allowed}
+  .count{font-family:ui-monospace,monospace;font-size:12px;margin-left:auto}
+  /* timeline */
+  .panel{border:2px solid var(--line);background:#fff;display:flex;flex-direction:column}
+  .panel-head{padding:10px 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid var(--line);background:#fff}
+  .panel-head h3{font-size:11px;letter-spacing:.12em;text-transform:uppercase}
+  .panel-head button{font-family:ui-monospace,monospace;font-size:11px;border:1.5px solid var(--line);background:var(--line);color:#fff;padding:6px 10px;cursor:pointer;font-weight:700}
+  .scrub{padding:14px 12px 10px;border-bottom:1.5px solid var(--line);background:#fff}
+  .scrub-track{height:36px;position:relative;background:#11110f;border-radius:999px;padding:4px;display:flex;align-items:center;gap:4px;overflow:hidden}
+  .scrub-progress{position:absolute;left:4px;top:4px;bottom:4px;background:var(--yellow);border-radius:999px;transition: width .45s ease; width:0}
+  .scrub-dot{width:28px;height:28px;border-radius:50%;background:#fff;border:2px solid #11110f;display:grid;place-items:center;font-size:12px;position:relative;z-index:1;flex-shrink:0;transition: transform .25s}
+  .scrub-dot.active{transform: scale(1.15);background:var(--red);color:#fff;border-color:#fff}
+  .scrub-dot.done{background:var(--yellow)}
+  .scrub-labels{display:flex;justify-content:space-between;font-family:ui-monospace,monospace;font-size:10px;margin-top:6px;letter-spacing:.04em;opacity:.7}
+  .events{padding:8px 12px;display:grid;gap:8px;max-height: 280px; overflow:auto}
+  .evt{display:grid;grid-template-columns:28px 1fr;gap:10px;align-items:start;padding:10px;border:1.5px solid transparent;transition: all .3s}
+  .evt .n{width:28px;height:28px;border:1.5px solid var(--line);display:grid;place-items:center;font-family:ui-monospace,monospace;font-size:11px;font-weight:800;background:#fff}
+  .evt .txt{font-size:13px;line-height:1.35;border-left:3px solid transparent;padding-left:8px}
+  .evt.active{border-color:var(--line);background: #f4f1ea}
+  .evt.active .txt{border-left-color: var(--red)}
+  .evt.dim{opacity:.45}
+  .log-mini{border-top:1.5px solid var(--line);padding:8px 12px;background:#f4f1ea;max-height:120px;overflow:auto}
+  .log-mini .row{font-family:ui-monospace,monospace;font-size:11px;display:flex;gap:8px;padding:4px 0;border-bottom:1px solid rgba(0,0,0,.08)}
+  .hint{font-family:ui-monospace,monospace;font-size:11px;color:var(--muted);padding:10px 12px;line-height:1.4;border-top:1px solid rgba(0,0,0,.06)}
+</style>
+</head>
+<body>
+<div class="bar">
+  <h1>TIMELINE SCRUBBER <em>hold on top rail · reroll on bottom</em></h1>
+  <div class="meta">02 / 05 — SWISS RAILS<br/>DRAG-AND-SNAP HOLD</div>
+</div>
+<div class="wrap">
+  <div class="board">
+    <div class="board-head">
+      <h2>Assign dice — click to shuttle between rails</h2>
+      <span class="phase">PHASE: ROLL</span>
+    </div>
+    <div class="rails">
+      <div class="rail hold-rail">
+        <div class="rail-head">▲ HOLD — MAGNETIZED <span id="holdCount">0 / 6 locked</span></div>
+        <div class="rail-grid" id="holdGrid"></div>
+      </div>
+      <div class="rail reroll-rail">
+        <div class="rail-head">▽ REROLL — LIVE &amp; RATTLING <span id="rerollCount">6 / 6 shaking</span></div>
+        <div class="rail-grid" id="rerollGrid"></div>
+      </div>
+    </div>
+    <div class="controls">
+      <button class="btn primary" id="rerollBtn">REROLL BOTTOM RAIL (2 left)</button>
+      <button class="btn ghost" id="keepBtn">KEEP &amp; SCORE</button>
+      <span class="count" id="countInfo">3 held · 3 rattling</span>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head">
+      <h3>Turn playback — scrub the log</h3>
+      <button id="playBtn">▶ PLAY</button>
+    </div>
+    <div class="scrub">
+      <div class="scrub-track" id="scrubTrack">
+        <div class="scrub-progress" id="scrubProgress"></div>
+      </div>
+      <div class="scrub-labels"><span>ROLL</span><span>HOLD</span><span>REROLL</span><span>HITS</span><span>PAYOUT</span></div>
+    </div>
+    <div class="events" id="events"></div>
+    <div class="log-mini" id="logMini"></div>
+    <div class="hint">Direction: Swiss/industrial. Two literal rails — top is black magnetized (held dice invert to white-on-black), bottom is dashed white with red rattling. Turn = film strip you can scrub; progress bar and dots animate the log verbatim.</div>
+  </div>
+</div>
+<script>
+const FACES=[
+  {k:'A',l:'⚔',s:'ATK'},{k:'H',l:'♥',s:'HEAL'},{k:'$',l:'◉',s:'NRG'},{k:'1',l:'1',s:'1'},{k:'2',l:'2',s:'2'},{k:'3',l:'3',s:'3'}
+];
+function rf(){return FACES[Math.floor(Math.random()*FACES.length)]}
+let dice = Array.from({length:6}, rf);
+let held=[false,false,false,false,false,false];
+let left=2;
+const holdGrid=document.getElementById('holdGrid');
+const rerollGrid=document.getElementById('rerollGrid');
+const holdCount=document.getElementById('holdCount');
+const rerollCount=document.getElementById('rerollCount');
+const countInfo=document.getElementById('countInfo');
+const rerollBtn=document.getElementById('rerollBtn');
+
+function render(){
+  holdGrid.innerHTML=''; rerollGrid.innerHTML='';
+  let h=0,r=0;
+  dice.forEach((d,i)=>{
+    const b=document.createElement('button');
+    b.className='die '+(held[i]?'held':'to-reroll rattling');
+    b.innerHTML=`<span class="face">${d.l}</span><span class="sub">${d.s} · ${d.k}</span>`;
+    b.onclick=()=>{held[i]=!held[i]; render();}
+    if(held[i]){holdGrid.appendChild(b);h++;} else {rerollGrid.appendChild(b);r++;}
+  });
+  if(h===0) holdGrid.innerHTML='<span style="font-family:ui-monospace,monospace;font-size:11px;opacity:.5;padding:8px">No dice locked — tap bottom dice to pin</span>';
+  if(r===0) rerollGrid.innerHTML='<span style="font-family:ui-monospace,monospace;font-size:11px;opacity:.5;padding:8px">All locked — nothing to reroll</span>';
+  holdCount.textContent=`${h} / 6 locked`;
+  rerollCount.textContent=`${r} / 6 shaking`;
+  countInfo.textContent=`${h} held · ${r} rattling`;
+  rerollBtn.disabled = left<=0 || r===0;
+  rerollBtn.textContent = left>0?`REROLL BOTTOM RAIL — ${r} dice (${left} left)`:'NO REROLLS LEFT';
+}
+rerollBtn.onclick=()=>{
+  if(left<=0) return;
+  const idx=held.map((h,i)=>!h?i:-1).filter(i=>i>=0);
+  if(!idx.length) return;
+  idx.forEach(i=>{
+    const el=[...rerollGrid.children].find(c=>c.textContent.includes(dice[i].k));
+  });
+  // quick shake then replace
+  rerollGrid.querySelectorAll('.die').forEach(d=>d.style.transform='translateY(-4px)');
+  setTimeout(()=>{
+    idx.forEach(i=>dice[i]=rf());
+    left--;
+    render();
+    addMini(`Rerolled ${idx.length} → ${idx.map(i=>dice[i].k).join(', ')}`);
+  },220);
+};
+document.getElementById('keepBtn').onclick=()=>{
+  addMini(`Kept ${dice.map(d=>d.k).join(', ')} — score`);
+  held=[true,true,true,true,true,true]; render();
+  setTimeout(()=>{dice=dice.map(rf); held=[false,false,false,false,false,false]; left=2; render();},700);
+};
+
+// timeline
+const steps=[
+  {dot:'1', title:'Roll — 6 dice dropped', sub:'A · H · $ · 1 · 2 · 3'},
+  {dot:'2', title:'Shuttle — pinned 1·2·3 to top rail', sub:'Kept triple threat'},
+  {dot:'3', title:'Reroll — bottom rail fired', sub:'A · H · $ in → 2 · 2 · A out'},
+  {dot:'4', title:'Hill hit — 2 damage to Gor', sub:'⚔ dice resolved'},
+  {dot:'5', title:'Payout — +$3, +1 heal', sub:'Energy & heart dice'},
+];
+const scrubTrack=document.getElementById('scrubTrack');
+const scrubProgress=document.getElementById('scrubProgress');
+const eventsEl=document.getElementById('events');
+const logMini=document.getElementById('logMini');
+function build(){
+  steps.forEach((s,i)=>{
+    const d=document.createElement('div');
+    d.className='scrub-dot'; d.id='dot-'+i; d.textContent=s.dot;
+    scrubTrack.appendChild(d);
+  });
+  steps.forEach((s,i)=>{
+    const e=document.createElement('div');
+    e.className='evt dim'; e.id='evt-'+i;
+    e.innerHTML=`<div class="n">${String(i+1).padStart(2,'0')}</div><div class="txt"><b>${s.title}</b><br><span style="font-family:ui-monospace,monospace;font-size:11px;opacity:.6">${s.sub}</span></div>`;
+    eventsEl.appendChild(e);
+  });
+  steps.forEach((s,i)=>{
+    const r=document.createElement('div'); r.className='row';
+    r.innerHTML=`<span style="opacity:.4">#${i+1}</span><span>${s.title} — ${s.sub}</span>`;
+    logMini.appendChild(r);
+  });
+}
+function addMini(t){
+  const r=document.createElement('div'); r.className='row';
+  r.innerHTML=`<span style="color:#e61c1c;font-weight:800">now</span><span>${t}</span>`;
+  logMini.prepend(r);
+}
+let playing=false, idx=0, tm=null;
+function reset(){
+  document.querySelectorAll('.scrub-dot').forEach(d=>d.classList.remove('active','done'));
+  document.querySelectorAll('.evt').forEach(e=>{e.classList.remove('active'); e.classList.add('dim')});
+  scrubProgress.style.width='0%';
+  idx=0;
+}
+function play(){
+  if(playing) return;
+  playing=true; reset();
+  document.getElementById('playBtn').textContent='● PLAYING';
+  function next(){
+    if(idx>=steps.length){ playing=false; document.getElementById('playBtn').textContent='↻ REPLAY'; return; }
+    const prevDot=document.getElementById('dot-'+(idx-1));
+    const prevEvt=document.getElementById('evt-'+(idx-1));
+    if(prevDot){ prevDot.classList.remove('active'); prevDot.classList.add('done'); }
+    if(prevEvt){ prevEvt.classList.remove('active'); prevEvt.classList.add('dim'); }
+    const dot=document.getElementById('dot-'+idx);
+    const evt=document.getElementById('evt-'+idx);
+    dot.classList.add('active'); evt.classList.remove('dim'); evt.classList.add('active');
+    scrubProgress.style.width = ((idx+1)/steps.length*100)+'%';
+    if(steps[idx].title.includes('Reroll')){ dice=dice.map(rf); render(); }
+    idx++;
+    tm=setTimeout(next, 780);
+  }
+  next();
+}
+document.getElementById('playBtn').onclick=()=>{
+  if(playing){clearTimeout(tm); playing=false; document.getElementById('playBtn').textContent='▶ PLAY'; reset();}
+  else play();
+};
+build(); render();
+</script>
+</body>
+</html>

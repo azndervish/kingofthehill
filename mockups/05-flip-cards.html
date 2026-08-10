@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>05 — Flip Cards</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{--ink:#0f0f0f;--paper:#ffffff;--accent:#e6361a;--muted:#8a8a8a;--line:#0f0f0f;--hold:#0f0f0f;--grid:#f2f2f2}
+  body{font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace; background: var(--paper); color:var(--ink); min-height:100vh}
+  .header{max-width:1100px;margin:0 auto;padding:18px 20px 12px;display:flex;justify-content:space-between;align-items:baseline;gap:16px;border-bottom:3px solid var(--ink)}
+  .header h1{font-family: ui-sans, system-ui, sans-serif; font-size:26px;font-weight:900;letter-spacing:-.03em}
+  .header h1 i{font-style:normal;color:var(--accent)}
+  .header h1 span{font-family: ui-monospace, monospace; font-weight:400;font-size:11px;letter-spacing:.06em;text-transform:uppercase;margin-left:10px;opacity:.7;vertical-align:middle}
+  .header .meta{font-size:11px;letter-spacing:.06em;opacity:.5;text-align:right}
+  .layout{max-width:1100px;margin:0 auto;padding:16px 20px 28px;display:grid;grid-template-columns:1.25fr .75fr;gap:18px}
+  @media(max-width:880px){.layout{grid-template-columns:1fr}}
+  .board{border:2px solid var(--ink);background:#fff}
+  .board-head{padding:10px 12px;display:flex;justify-content:space-between;align-items:center;background:var(--ink);color:#fff}
+  .board-head h2{font-size:11px;letter-spacing:.14em;text-transform:uppercase}
+  .board-head .phase{font-size:11px;background:var(--accent);color:#fff;padding:3px 7px;font-weight:800}
+  .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:14px;background: var(--grid); border-bottom:1.5px solid var(--ink)}
+  @media(max-width:520px){.cards{grid-template-columns:repeat(2,1fr)}}
+  .card{aspect-ratio: 4/3; perspective: 700px; cursor:pointer}
+  .card-inner{width:100%;height:100%;position:relative;transform-style:preserve-3d;transition: transform .42s cubic-bezier(.4,0,.2,1)}
+  .card.held .card-inner{transform: rotateY(0deg)}
+  .card.reroll .card-inner{transform: rotateY(180deg)}
+  .face{position:absolute;inset:0;border:1.5px solid var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;backface-visibility:hidden}
+  .face.front{background:var(--ink);color:#fff}
+  .face.back{background:#fff;color:var(--ink);transform: rotateY(180deg)}
+  .face .big{font-size:30px;font-weight:900;line-height:1;letter-spacing:-.02em}
+  .face .sub{font-size:9px;letter-spacing:.12em;margin-top:4px;opacity:.7}
+  .face .tag{position:absolute;top:6px;left:6px;font-size:8px;letter-spacing:.1em;padding:2px 5px;border:1px solid currentColor}
+  .face.front .tag{background:#fff;color:var(--ink);border-color:#fff}
+  .face.back .tag{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .card:hover .face{box-shadow: 4px 4px 0 var(--ink)}
+  .legend{display:flex;gap:16px;padding:10px 14px;font-size:11px;letter-spacing:.06em;background:#fff;border-bottom:1px solid rgba(0,0,0,.08)}
+  .legend span{display:flex;align-items:center;gap:6px}
+  .legend i{width:12px;height:12px;border:1.5px solid var(--ink);display:inline-block}
+  .legend i.held{background:var(--ink)}
+  .legend i.reroll{background:#fff; border-style:dashed; border-color:var(--accent)}
+  .controls{display:flex;gap:10px;padding:12px;background:#fff;flex-wrap:wrap;align-items:center}
+  .btn{appearance:none;border:1.5px solid var(--ink);padding:9px 14px;font-weight:800;font-size:13px;cursor:pointer;font-family: ui-sans, system-ui, sans-serif}
+  .btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .btn.ghost{background:#fff;color:var(--ink)}
+  .btn:disabled{opacity:.35}
+  .count{font-size:11px;margin-left:auto;opacity:.7}
+  /* receipt */
+  .receipt{border:2px solid var(--ink);background:#fff;display:flex;flex-direction:column}
+  .receipt-head{padding:10px 12px;display:flex;justify-content:space-between;align-items:center;background:#fff;border-bottom:2px solid var(--ink)}
+  .receipt-head h3{font-size:11px;letter-spacing:.12em;text-transform:uppercase}
+  .receipt-head button{font-size:11px;background:var(--ink);color:#fff;border:1.5px solid var(--ink);padding:6px 10px;cursor:pointer;font-weight:700}
+  .tape-wrap{padding:12px;background:#f2f2f2;min-height:300px;position:relative;overflow:hidden}
+  .tape{width:100%;max-width:360px;margin:0 auto;background:#fff;border:1.5px solid var(--ink);box-shadow: 4px 4px 0 var(--ink);min-height:260px;position:relative;overflow:hidden}
+  .tape::before{content:"";position:absolute;left:0;right:0;top:0;height:10px;background: repeating-linear-gradient(90deg, transparent 0 8px, var(--ink) 8px 10px);opacity:.12}
+  .tape-head{padding:14px 14px 10px;border-bottom:1.5px dashed var(--ink);text-align:center}
+  .tape-head b{font-size:11px;letter-spacing:.14em}
+  .tape-head div{font-size:10px;opacity:.5;margin-top:2px}
+  .tape-body{padding:8px 12px;display:grid;gap:0}
+  .line{padding:10px 6px;border-bottom:1px solid rgba(0,0,0,.08);display:grid;grid-template-columns:22px 1fr;gap:8px;align-items:start;opacity:.18;transform: translateY(6px);transition: opacity .35s, transform .35s, background .35s}
+  .line.active{opacity:1;transform:translateY(0);background:#fff7f2}
+  .line.done{opacity:.5;transform:translateY(0)}
+  .line .bullet{width:22px;height:22px;border:1.5px solid var(--ink);display:grid;place-items:center;font-size:11px;background:#fff}
+  .line.active .bullet{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .line .txt{font-size:12px;line-height:1.35}
+  .line .txt small{font-size:10px;opacity:.6;display:block;font-family: ui-monospace, monospace}
+  .tape-foot{padding:10px 14px;border-top:1.5px dashed var(--ink);display:flex;justify-content:space-between;font-size:10px;letter-spacing:.08em;opacity:.6}
+  .log{border-top:1.5px solid var(--ink);padding:8px 12px;background:#fff;max-height:130px;overflow:auto}
+  .log .row{font-size:11px;display:flex;gap:8px;padding:4px 0;border-bottom:1px solid rgba(0,0,0,.06)}
+  .hint{font-family: ui-sans, system-ui, sans-serif;font-size:11px;opacity:.6;padding:10px 12px;line-height:1.4;border-top:1px solid rgba(0,0,0,.06)}
+</style>
+</head>
+<body>
+<div class="header">
+  <h1><i>■</i> FLIP CARDS <span>face-up held · face-down to reroll</span></h1>
+  <div class="meta">05 / 05 · BRUTALIST<br/>HIGH CONTRAST</div>
+</div>
+<div class="layout">
+  <div class="board">
+    <div class="board-head">
+      <h2>Click a card to flip hold / reroll</h2>
+      <span class="phase">ROLL</span>
+    </div>
+    <div class="cards" id="cards"></div>
+    <div class="legend">
+      <span><i class="held"></i> FACE-UP = HELD</span>
+      <span><i class="reroll"></i> FACE-DOWN = REROLL</span>
+      <span style="margin-left:auto;opacity:.6" id="legendCount">0 held · 6 down</span>
+    </div>
+    <div class="controls">
+      <button class="btn primary" id="rerollBtn">FLIP &amp; REROLL DOWNS (2 left)</button>
+      <button class="btn ghost" id="keepBtn">KEEP ALL FACE-UP</button>
+      <span class="count" id="countInfo"></span>
+    </div>
+  </div>
+
+  <div class="receipt">
+    <div class="receipt-head">
+      <h3>Receipt — log prints live</h3>
+      <button id="playBtn">▶ PRINT</button>
+    </div>
+    <div class="tape-wrap">
+      <div class="tape" id="tape">
+        <div class="tape-head"><b>KING OF THE HILL</b><div>TURN RECEIPT #042 · You vs Gor + 2</div></div>
+        <div class="tape-body" id="tapeBody"></div>
+        <div class="tape-foot"><span id="footLeft">START 00:00</span><span id="footRight">END —:—</span></div>
+      </div>
+    </div>
+    <div class="log" id="log"></div>
+    <div class="hint">Direction: brutalist mono. Held = face-up black card (white text, “HELD” tag); reroll = face-down white card with red dashed “REROLL” tag — the 3D flip is the affordance. Turn animation = receipt printer feeding line-by-line, exactly mirroring the log.</div>
+  </div>
+</div>
+<script>
+const FACES=[
+  {k:'A',l:'⚔',s:'ATTACK'},{k:'H',l:'♥',s:'HEAL'},{k:'$',l:'◉',s:'ENERGY'},{k:'1',l:'1',s:'ONE'},{k:'2',l:'2',s:'TWO'},{k:'3',l:'3',s:'THREE'}
+];
+function rf(){return FACES[Math.floor(Math.random()*FACES.length)]}
+let dice = Array.from({length:6}, rf);
+let held=[false,false,false,false,false,false];
+let left=2;
+const cardsEl=document.getElementById('cards');
+const legendCount=document.getElementById('legendCount');
+const countInfo=document.getElementById('countInfo');
+const rerollBtn=document.getElementById('rerollBtn');
+function render(){
+  cardsEl.innerHTML='';
+  let h=0;
+  dice.forEach((d,i)=>{
+    const card=document.createElement('div');
+    card.className='card '+(held[i]?'held':'reroll');
+    card.innerHTML=`
+      <div class="card-inner">
+        <div class="face front"><span class="tag">HELD</span><span class="big">${d.l}</span><span class="sub">${d.s} · ${d.k}</span></div>
+        <div class="face back"><span class="tag">REROLL</span><span class="big">${d.l}</span><span class="sub">${d.s} · ${d.k}</span></div>
+      </div>`;
+    card.onclick=()=>{ held[i]=!held[i]; render(); };
+    cardsEl.appendChild(card);
+    if(held[i]) h++;
+  });
+  const r=6-h;
+  legendCount.textContent=`${h} held · ${r} down`;
+  countInfo.textContent=`${h} up · ${r} down`;
+  rerollBtn.disabled = left<=0 || r===0;
+  rerollBtn.textContent = left>0?`FLIP & REROLL ${r} DOWNS (${left} left)`:'NO FLIPS LEFT';
+}
+rerollBtn.onclick=()=>{
+  if(left<=0) return;
+  const idx=held.map((h,i)=>!h?i:-1).filter(i=>i>=0);
+  if(!idx.length) return;
+  // flip animation then reroll
+  idx.forEach(i=>{
+    const card=cardsEl.children[i];
+    card.style.transform='translateY(-4px)';
+  });
+  setTimeout(()=>{
+    idx.forEach(i=>dice[i]=rf());
+    left--;
+    render();
+    addLog(`Flipped ${idx.length} downs → ${idx.map(i=>dice[i].k).join(', ')}`);
+  }, 320);
+};
+document.getElementById('keepBtn').onclick=()=>{
+  addLog(`Kept ${dice.map(d=>d.k).join(', ')}`);
+  held=[true,true,true,true,true,true]; render();
+  setTimeout(()=>{dice=dice.map(rf); held=[false,false,false,false,false,false]; left=2; render();},700);
+};
+// receipt
+const steps=[
+  {b:'01', title:'Roll — 6 cards dealt', sub:'A · H · $ · 1 · 2 · 3'},
+  {b:'02', title:'Hold — 1·2·3 stayed face-up', sub:'Black cards locked'},
+  {b:'03', title:'Reroll — 3 downs flipped', sub:'White → new: A · H · $'},
+  {b:'04', title:'Attack — 2 DMG to Gor', sub:'⚔ resolves'},
+  {b:'05', title:'Payout — $3 + heal', sub:'Energy & ♥'},
+];
+const tapeBody=document.getElementById('tapeBody');
+const logEl=document.getElementById('log');
+const footRight=document.getElementById('footRight');
+function build(){
+  steps.forEach((s,i)=>{
+    const line=document.createElement('div');
+    line.className='line'; line.id='line-'+i;
+    line.innerHTML=`<div class="bullet">${s.b}</div><div class="txt"><b>${s.title}</b><small>${s.sub}</small></div>`;
+    tapeBody.appendChild(line);
+  });
+  steps.forEach((s,i)=>{
+    const r=document.createElement('div'); r.className='row';
+    r.innerHTML=`<span style="opacity:.4">#${i+1}</span><span>${s.title} — ${s.sub}</span>`;
+    logEl.appendChild(r);
+  });
+}
+function addLog(t){
+  const r=document.createElement('div'); r.className='row';
+  r.innerHTML=`<span style="color:#e6361a;font-weight:800">now</span><span>${t}</span>`;
+  logEl.prepend(r);
+}
+let playing=false, idx=0, tm=null;
+function reset(){
+  document.querySelectorAll('.line').forEach(l=>{l.classList.remove('active','done')});
+  footRight.textContent='END —:—';
+  idx=0;
+}
+function play(){
+  if(playing) return;
+  playing=true; reset();
+  document.getElementById('playBtn').textContent='● PRINTING';
+  function next(){
+    if(idx>=steps.length){ playing=false; document.getElementById('playBtn').textContent='↻ REPRINT'; footRight.textContent='END 00:0'+idx; return; }
+    const prev=document.getElementById('line-'+(idx-1));
+    if(prev){prev.classList.remove('active'); prev.classList.add('done')}
+    const cur=document.getElementById('line-'+idx);
+    cur.classList.add('active');
+    footRight.textContent='PRINTING '+(idx+1)+'/'+steps.length;
+    if(steps[idx].title.includes('Reroll')){ dice=dice.map(rf); render(); }
+    idx++;
+    tm=setTimeout(next, 740);
+  }
+  next();
+}
+document.getElementById('playBtn').onclick=()=>{
+  if(playing){clearTimeout(tm); playing=false; document.getElementById('playBtn').textContent='▶ PRINT'; reset();}
+  else play();
+};
+build(); render();
+</script>
+</body>
+</html>
