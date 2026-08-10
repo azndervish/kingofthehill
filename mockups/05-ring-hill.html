@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>05 — Ring & Hill</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0b0a14;--surface:#1a1730;--surface2:#241f3d;--line:rgba(255,255,255,.08);--line2:rgba(255,255,255,.14);--purple:#8b4cf0;--yellow:#facc15;--ink:#f5f3ff;--muted:#9a96b8}
+body{font-family: ui-sans, system-ui, sans-serif; background:var(--bg); color:var(--ink); min-height:100vh}
+.top{max-width:1120px;margin:0 auto;padding:18px 20px 10px;display:flex;justify-content:space-between;align-items:baseline;gap:16px;border-bottom:1px solid var(--line)}
+.top h1{font-size:17px;letter-spacing:.06em;text-transform:uppercase;font-weight:800}
+.top h1 b{color:var(--yellow)}
+.top .meta{font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.08em;color:var(--muted);text-align:right}
+.wrap{max-width:1120px;margin:0 auto;padding:12px 20px 28px;display:grid;gap:16px}
+.ring-wrap{border:1px solid var(--line);background:var(--surface);overflow:hidden;position:relative}
+.ring-head{padding:10px 14px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);background: rgba(139,76,240,.08)}
+.ring-head h2{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.ring-head .phase{font-family:ui-monospace,monospace;font-size:11px;background:var(--purple);color:#fff;padding:4px 8px;font-weight:700}
+.ring{position:relative;height:300px;background: radial-gradient(500px 300px at 50% 50%, rgba(139,76,240,.12), transparent 70%), radial-gradient(300px 200px at 50% 50%, rgba(250,204,21,.08), transparent 70%);display:grid;place-items:center;overflow:hidden}
+.hill-center{width:110px;height:110px;border-radius:50%;background: var(--surface2);border:2px solid var(--yellow);display:grid;place-items:center;position:relative;z-index:2;box-shadow: 0 0 30px rgba(250,204,21,.2)}
+.hill-center b{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--yellow)}
+.hill-center small{font-family:ui-monospace,monospace;font-size:10px;color:var(--muted);display:block;margin-top:2px}
+.hill-ring{position:absolute;inset:40px;border:1px dashed rgba(255,255,255,.08);border-radius:50%;pointer-events:none}
+.pcard{position:absolute;width:160px;background:#0b0a14;border:1px solid var(--line);padding:10px 10px 8px;z-index:2}
+.pcard.hill{border-color:var(--yellow);box-shadow:0 0 0 1px rgba(250,204,21,.3)}
+.pcard.hill::before{content:"ON HILL";position:absolute;top:-8px;left:50%;transform:translateX(-50%);background:var(--yellow);color:#0b0a14;font-family:ui-monospace,monospace;font-size:8px;font-weight:800;letter-spacing:.08em;padding:2px 6px;white-space:nowrap}
+.pcard .name{font-weight:800;font-size:12px}
+.pcard .hp{font-family:ui-monospace,monospace;font-size:11px;margin-top:4px}
+.pcard .hp b{font-size:14px}
+.pcard .bar{height:3px;background:rgba(255,255,255,.1);margin-top:6px;position:relative}
+.pcard .bar i{position:absolute;left:0;top:0;bottom:0;background:var(--purple);transition:width .4s}
+.pcard.hill .bar i{background:var(--yellow)}
+.pcard .sub{font-family:ui-monospace,monospace;font-size:10px;color:var(--muted);margin-top:2px}
+.popup{position:absolute;left:50%;top:28%;transform:translate(-50%,-50%);font-weight:900;font-size:18px;pointer-events:none;opacity:0;z-index:5}
+.popup.dmg{color:var(--yellow);-webkit-text-stroke:1px #000}
+.popup.heal{color:#4ade80;-webkit-text-stroke:1px #000}
+.popup.coin{color:var(--yellow)}
+@keyframes popUp{0%{opacity:0;transform:translate(-50%,-10%) scale(.9)}15%{opacity:1;transform:translate(-50%,-50%) scale(1.08)}75%{opacity:1}100%{opacity:0;transform:translate(-50%,-90%)}}
+@keyframes shake{0%,100%{transform:translate(-50%,-50%)}20%{transform:translate(calc(-50% - 5px), -50%)}40%{transform:translate(calc(-50% + 5px), -50%)}60%{transform:translate(calc(-50% - 3px), -50%)}80%{transform:translate(calc(-50% + 3px), -50%)}}
+/* for ring cards, shake needs to keep position; we add class that animates margin */
+.shaking{animation: shakeCard .35s ease}
+@keyframes shakeCard{0%,100%{transform:translate(-50%,-50%)}20%{transform:translate(calc(-50% - 6px), -50%)}40%{transform:translate(calc(-50% + 6px), -50%)}60%{transform:translate(calc(-50% - 3px), -50%)}80%{transform:translate(calc(-50% + 3px), -50%)}}
+.float{animation: popUp .9s ease forwards}
+.attack-line{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:1}
+.attack-line line{stroke:var(--yellow);stroke-width:2;stroke-dasharray:6 4;opacity:0;transition:opacity .2s}
+.attack-line.active line{opacity:.9}
+/* dice */
+.board{border:1px solid var(--line);background:var(--surface);overflow:hidden}
+.board-head{padding:10px 14px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);background:var(--surface2)}
+.board-head h3{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.dice-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;padding:14px}
+@media(max-width:700px){.dice-grid{grid-template-columns:repeat(3,1fr)}}
+.die{aspect-ratio:1;border:1.5px solid var(--line2);background:#0b0a14;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;position:relative}
+.die .face{font-size:22px;font-weight:900}
+.die .lbl{font-family:ui-monospace,monospace;font-size:9px;letter-spacing:.08em;margin-top:4px;opacity:.6}
+.die .badge{position:absolute;top:6px;right:6px;font-family:ui-monospace,monospace;font-size:7px;letter-spacing:.08em;padding:2px 5px;border:1px solid transparent}
+.die.held{background:var(--purple);color:#fff;border-color:var(--purple)}
+.die.held .badge{background:var(--yellow);color:#0b0a14;border-color:var(--yellow);font-weight:800}
+.die.reroll{border-color:var(--yellow);border-style:dashed;background:transparent;color:var(--ink)}
+.die.reroll .badge{color:var(--yellow);border-color:var(--yellow)}
+.die.reroll.shaking{animation: shakeDice .3s linear infinite}
+@keyframes shakeDice{0%{transform:translate(0,0)}25%{transform:translate(1px,-1px)}50%{transform:translate(-1px,1px)}75%{transform:translate(1px,0)}100%{transform:translate(0,0)}}
+.legend{padding:8px 14px;display:flex;gap:12px;font-family:ui-monospace,monospace;font-size:10px;color:var(--muted);border-top:1px solid var(--line);background:rgba(0,0,0,.2)}
+.controls{padding:12px 14px;display:flex;gap:8px;flex-wrap:wrap;border-top:1px solid var(--line)}
+.btn{appearance:none;padding:9px 16px;font-weight:800;font-size:13px;cursor:pointer;border:1px solid transparent}
+.btn.primary{background:var(--purple);color:#fff}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line2)}
+.btn:disabled{opacity:.35}
+.controls .meta{margin-left:auto;font-family:ui-monospace,monospace;font-size:11px;color:var(--muted);align-self:center}
+.replay{border:1px solid var(--line);background:var(--surface);overflow:hidden}
+.replay-head{padding:10px 14px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);background: rgba(250,204,21,.06)}
+.replay-head h3{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.replay-head button{font-family:ui-monospace,monospace;font-size:11px;padding:6px 10px;cursor:pointer;border:1px solid var(--line2);background:var(--surface2);color:var(--ink);font-weight:700}
+.replay-head button.go{background:var(--yellow);color:#0b0a14;border-color:var(--yellow);font-weight:800}
+.steps{padding:10px 14px;display:flex;gap:6px;overflow:auto}
+.step{min-width:140px;flex:1;padding:10px;border:1px solid var(--line);background:rgba(255,255,255,.02);cursor:pointer}
+.step.active{border-color:var(--yellow);background:rgba(250,204,21,.08)}
+.step.done{opacity:.4}
+.step .n{font-family:ui-monospace,monospace;font-size:10px;color:var(--muted)}
+.step b{font-size:12px;display:block;margin-top:4px}
+.step small{font-family:ui-monospace,monospace;font-size:10px;color:var(--muted);display:block;margin-top:2px}
+.log{border-top:1px solid var(--line);max-height:120px;overflow:auto;padding:8px 14px;background:rgba(0,0,0,.2)}
+.log .row{font-family:ui-monospace,monospace;font-size:11px;display:flex;gap:8px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.06)}
+.hint{font-family:ui-monospace,monospace;font-size:11px;color:var(--muted);padding:10px 14px;border-top:1px solid var(--line);line-height:1.4}
+</style>
+</head>
+<body>
+<div class="top">
+  <h1><b style="color:var(--purple)">Ring</b> &amp; Hill <span>— players around the hill, attacks draw a line</span></h1>
+  <div class="meta">05 / 05 · DARK · PURPLE + YELLOW</div>
+</div>
+<div class="wrap">
+  <div class="ring-wrap">
+    <div class="ring-head"><h2>The Hill — ring positions</h2><span class="phase">REPLAY</span></div>
+    <div class="ring" id="ring">
+      <div class="hill-ring"></div>
+      <div class="hill-center"><div><b>THE HILL</b><small>hold to score</small></div></div>
+      <svg class="attack-line" id="attackLine" viewBox="0 0 100 100" preserveAspectRatio="none"><line id="attackLineEl" x1="50" y1="50" x2="50" y2="50"/></svg>
+    </div>
+    <div class="steps" id="steps"></div>
+  </div>
+
+  <div class="board">
+    <div class="board-head"><h3>Dice — hold in place (same grid)</h3><span style="font-family:ui-monospace,monospace;font-size:11px;background:var(--purple);color:#fff;padding:4px 8px;font-weight:700">ROLL</span></div>
+    <div class="dice-grid" id="diceGrid"></div>
+    <div class="legend"><span><b style="color:var(--purple)">■ HELD</b> purple</span><span><b style="color:var(--yellow)">◰ SHAKE</b> yellow dashed, shaking</span><span style="margin-left:auto" id="legendCount"></span></div>
+    <div class="controls">
+      <button class="btn primary" id="rerollBtn">Reroll shaking</button>
+      <button class="btn ghost" id="keepBtn">Keep all</button>
+      <span class="meta" id="ctrlMeta"></span>
+      <span class="meta" style="margin-left:8px"><button id="prevBtn" style="font:inherit;padding:4px 8px;border:1px solid var(--line2);background:var(--surface2);color:var(--ink);cursor:pointer">‹</button> <button class="go" id="playBtn" style="font:inherit;padding:4px 10px;background:var(--yellow);color:#0b0a14;border:1px solid var(--yellow);font-weight:800;cursor:pointer">▶ Play</button> <button id="nextBtn" style="font:inherit;padding:4px 8px;border:1px solid var(--line2);background:var(--surface2);color:var(--ink);cursor:pointer">›</button></span>
+    </div>
+  </div>
+
+  <div class="replay" style="display:none">
+    <div class="log" id="log"></div>
+  </div>
+  <div class="replay" style="border:1px solid var(--line);background:var(--surface)">
+    <div class="log" id="log2" style="border-top:none"></div>
+    <div class="hint">Ring shows spatial hill — attacks draw a yellow line from attacker to defender(s) while cards shake and damage/heal/coins float. Dice never move zones; they flip state in place.</div>
+  </div>
+</div>
+<script>
+const FACES=[{k:'A',l:'⚔',s:'ATK'},{k:'H',l:'♥',s:'HEAL'},{k:'$',l:'◉',s:'NRG'},{k:'1',l:'1',s:'1'},{k:'2',l:'2',s:'2'},{k:'3',l:'3',s:'3'}];
+const PLAYERS=[
+  {name:'You', hp:7, max:10, pts:4, money:5, hill:false, angle: -90},
+  {name:'Gor', hp:6, max:10, pts:8, hill:true, angle: 0},
+  {name:'Mira', hp:10, max:10, pts:2, hill:false, angle: 90},
+  {name:'Karn', hp:3, max:10, pts:5, hill:false, angle: 180},
+];
+function rf(){return FACES[Math.floor(Math.random()*FACES.length)]}
+let dice=Array.from({length:6},rf);
+let held=[false,false,true,false,true,false];
+let left=2;
+const ring=document.getElementById('ring');
+function placePlayers(){
+  // remove old pcards
+  [...ring.querySelectorAll('.pcard')].forEach(e=>e.remove());
+  const cx=50, cy=50, r=34; // percent
+  PLAYERS.forEach((p,i)=>{
+    const el=document.createElement('div');
+    el.className='pcard'+(p.hill?' hill':'');
+    el.id='pcard-'+i;
+    // position by angle
+    const rad = p.angle * Math.PI/180;
+    const x = 50 + Math.cos(rad)*r;
+    const y = 50 + Math.sin(rad)*r;
+    el.style.left = x+'%';
+    el.style.top = y+'%';
+    el.style.transform='translate(-50%,-50%)';
+    el.innerHTML=`<div class="name">${p.name}</div><div class="hp"><b>${p.hp}</b>/${p.max}</div><div class="bar"><i style="width:${p.hp/p.max*100}%"></i></div><div class="sub">${p.hill?'ON HILL':'FIELD'} · $${p.money}</div><div class="popup" id="popup-${i}"></div>`;
+    ring.appendChild(el);
+  });
+}
+const diceGrid=document.getElementById('diceGrid');
+const legendCount=document.getElementById('legendCount');
+const ctrlMeta=document.getElementById('ctrlMeta');
+const rerollBtn=document.getElementById('rerollBtn');
+function renderDice(){
+  diceGrid.innerHTML='';
+  let h=0;
+  dice.forEach((d,i)=>{
+    const b=document.createElement('button');
+    b.className='die '+(held[i]?'held':'reroll shaking');
+    b.innerHTML=`<span class="badge">${held[i]?'HELD':'SHAKE'}</span><span class="face">${d.l}</span><span class="lbl">${d.s} · ${d.k}</span>`;
+    b.onclick=()=>{ held[i]=!held[i]; renderDice(); };
+    diceGrid.appendChild(b);
+    if(held[i]) h++;
+  });
+  const r=6-h;
+  legendCount.textContent=`${h} held · ${r} shaking`;
+  ctrlMeta.textContent=`${h} locked · ${r} shaking`;
+  rerollBtn.disabled=left<=0||r===0;
+  rerollBtn.textContent=left>0?`Reroll ${r} shaking (${left} left)`:'No rerolls';
+}
+rerollBtn.onclick=()=>{
+  const idx=held.map((v,i)=>!v?i:-1).filter(i=>i>=0);
+  if(!idx.length||left<=0) return;
+  idx.forEach(i=> dice[i]=rf());
+  left--; renderDice(); addLog(`reroll ${idx.length} → ${idx.map(i=>dice[i].k).join(', ')}`);
+};
+document.getElementById('keepBtn').onclick=()=>{
+  addLog(`keep ${dice.map(d=>d.k).join(', ')}`);
+  held=[true,true,true,true,true,true]; renderDice();
+  setTimeout(()=>{ dice=dice.map(rf); held=[false,false,true,false,true,false]; left=2; renderDice(); },600);
+};
+const steps=[
+  {n:'01', b:'ROLL', s:'6 dice — pick holds in place', hold:null},
+  {n:'02', b:'HOLD', s:'Lock 1·2·3 purple', hold:[2,4,5]},
+  {n:'03', b:'REROLL', s:'3 shake → H·$·A', reroll:true},
+  {n:'04', b:'ATTACK', s:'You → Gor 2dmg', at:{attacker:0, defenders:[1], dmg:2}},
+  {n:'05', b:'HEAL', s:'You ♥+1', at:{heal:[0], amt:1}},
+  {n:'06', b:'COIN', s:'You +$3, Karn +$1', at:{coins:[0,3], amt:3, amt2:1}},
+  {n:'07', b:'COUNTER', s:'Gor → You 1dmg', at:{attacker:1, defenders:[0], dmg:1}},
+];
+const stepsEl=document.getElementById('steps');
+const logEl=document.getElementById('log2');
+function build(){
+  steps.forEach((s,i)=>{
+    const e=document.createElement('div'); e.className='step'; e.id='step-'+i;
+    e.innerHTML=`<div class="n">${s.n}</div><b>${s.b}</b><small>${s.s}</small>`;
+    e.onclick=()=>go(i);
+    stepsEl.appendChild(e);
+  });
+  steps.forEach((s,i)=>{
+    const r=document.createElement('div'); r.className='row';
+    r.innerHTML=`<span style="opacity:.4">#${i+1}</span><span>${s.b} — ${s.s}</span>`;
+    logEl.appendChild(r);
+  });
+}
+function addLog(t){
+  const r=document.createElement('div'); r.className='row';
+  r.innerHTML=`<span style="color:var(--yellow);font-weight:800">now</span><span>${t}</span>`;
+  logEl.prepend(r);
+}
+function shake(idx){
+  const c=document.getElementById('pcard-'+idx);
+  c.classList.remove('shaking'); void c.offsetWidth; c.classList.add('shaking');
+  setTimeout(()=>c.classList.remove('shaking'),360);
+}
+function float(idx, text, cls){
+  const p=document.getElementById('popup-'+idx);
+  p.textContent=text; p.className='popup '+cls+' float';
+  setTimeout(()=>{ p.className='popup '+cls; p.textContent=''; },900);
+}
+function showLine(from, to){
+  const line=document.getElementById('attackLine');
+  const lineEl=document.getElementById('attackLineEl');
+  const fromEl=document.getElementById('pcard-'+from);
+  const toEl=document.getElementById('pcard-'+to);
+  if(!fromEl||!toEl) return;
+  // get positions relative to ring
+  const rr=ring.getBoundingClientRect();
+  const fr=fromEl.getBoundingClientRect();
+  const tr=toEl.getBoundingClientRect();
+  const fx = ((fr.left + fr.width/2 - rr.left)/rr.width)*100;
+  const fy = ((fr.top + fr.height/2 - rr.top)/rr.height)*100;
+  const tx = ((tr.left + tr.width/2 - rr.left)/rr.width)*100;
+  const ty = ((tr.top + tr.height/2 - rr.top)/rr.height)*100;
+  lineEl.setAttribute('x1', fx); lineEl.setAttribute('y1', fy);
+  lineEl.setAttribute('x2', tx); lineEl.setAttribute('y2', ty);
+  line.classList.add('active');
+  setTimeout(()=>line.classList.remove('active'), 700);
+}
+let cur=-1, playing=false, tm=null;
+function go(i){
+  if(i<0||i>=steps.length) return;
+  if(cur>=0){
+    const prev=document.getElementById('step-'+cur);
+    if(prev){ prev.classList.remove('active'); prev.classList.add('done'); }
+  }
+  cur=i;
+  const e=document.getElementById('step-'+cur); e.classList.remove('done'); e.classList.add('active');
+  const s=steps[cur];
+  if(s.hold){ held=[false,false,false,false,false,false]; s.hold.forEach(j=>held[j]=true); renderDice(); }
+  if(s.reroll){ dice=dice.map(rf); renderDice(); }
+  if(s.at?.attacker!=null) shake(s.at.attacker);
+  if(s.at?.defenders) s.at.defenders.forEach(d=>{ shake(d); float(d, `-${s.at.dmg}`, 'dmg'); PLAYERS[d].hp=Math.max(0, PLAYERS[d].hp - s.at.dmg); showLine(s.at.attacker, d); });
+  if(s.at?.heal) s.at.heal.forEach(d=>{ float(d, `♥+${s.at.amt}`, 'heal'); PLAYERS[d].hp=Math.min(PLAYERS[d].max, PLAYERS[d].hp + s.at.amt); });
+  if(s.at?.coins){
+    s.at.coins.forEach((d,idx2)=>{
+      const amt = idx2===0? s.at.amt : (s.at.amt2||s.at.amt);
+      float(d, `+$${amt}`, 'coin'); PLAYERS[d].money+=amt;
+    });
+  }
+  placePlayers();
+}
+function play(){
+  if(playing) return;
+  playing=true; document.getElementById('playBtn').textContent='■ Stop';
+  function next(){
+    if(cur>=steps.length-1){ playing=false; document.getElementById('playBtn').textContent='▶ Play'; return; }
+    go(cur+1); tm=setTimeout(next, 850);
+  }
+  if(cur<0) go(0);
+  tm=setTimeout(next, 850);
+}
+document.getElementById('playBtn').onclick=()=>{
+  if(playing){ clearTimeout(tm); playing=false; document.getElementById('playBtn').textContent='▶ Play'; }
+  else { if(cur>=steps.length-1){ document.querySelectorAll('.step').forEach(e=>e.classList.remove('active','done')); cur=-1; PLAYERS[0].hp=7; PLAYERS[1].hp=6; PLAYERS[0].money=5; PLAYERS[3].money=4; placePlayers(); } play(); }
+};
+document.getElementById('prevBtn').onclick=()=>go(cur-1);
+document.getElementById('nextBtn').onclick=()=>go(cur+1);
+build(); placePlayers(); renderDice();
+</script>
+</body>
+</html>

@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>04 — HUD Stack</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0d0b18;--surface:#1a1730;--surface2:#211e3a;--line:rgba(255,255,255,.08);--line2:rgba(255,255,255,.14);--purple:#8b4cf0;--yellow:#facc15;--ink:#f5f3ff;--muted:#9a96b8}
+body{font-family: ui-sans, system-ui, sans-serif; background:var(--bg); color:var(--ink); min-height:100vh}
+.top{max-width:1120px;margin:0 auto;padding:18px 20px 10px;display:flex;justify-content:space-between;align-items:baseline;gap:16px;border-bottom:1px solid var(--line)}
+.top h1{font-size:17px;letter-spacing:.06em;text-transform:uppercase;font-weight:800}
+.top h1 b{color:var(--purple)}
+.top .meta{font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.08em;color:var(--muted);text-align:right}
+.layout{max-width:1120px;margin:0 auto;padding:12px 20px 28px;display:grid;grid-template-columns: 1.35fr .65fr;gap:16px}
+@media(max-width:880px){.layout{grid-template-columns:1fr}}
+.main{border:1px solid var(--line);background:var(--surface);overflow:hidden}
+.main-head{padding:10px 14px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);background: rgba(139,76,240,.08)}
+.main-head h2{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.main-head .phase{font-family:ui-monospace,monospace;font-size:11px;background:var(--purple);color:#fff;padding:4px 8px;font-weight:700}
+.pills{padding:12px 14px;display:flex;gap:8px;align-items:center;border-bottom:1px solid var(--line);background:rgba(0,0,0,.15)}
+.pill{flex:1;height:6px;background:rgba(255,255,255,.08);position:relative;overflow:hidden}
+.pill i{position:absolute;left:0;top:0;bottom:0;background:var(--yellow);width:0;transition:width .4s}
+.pill.active i{background:var(--purple)}
+.pill.done i{background:var(--yellow);width:100%!important}
+.pill-labels{display:flex;justify-content:space-between;font-family:ui-monospace,monospace;font-size:9px;letter-spacing:.06em;color:var(--muted);margin-top:6px}
+.dice-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:16px 14px}
+.die{aspect-ratio:1.05;border:1.5px solid var(--line2);background:#0d0b18;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;position:relative}
+.die .face{font-size:26px;font-weight:900}
+.die .lbl{font-family:ui-monospace,monospace;font-size:9px;letter-spacing:.08em;margin-top:4px;opacity:.7}
+.die .badge{position:absolute;top:6px;right:6px;font-family:ui-monospace,monospace;font-size:7px;letter-spacing:.08em;padding:2px 5px;border:1px solid transparent}
+.die.held{background:var(--purple);color:#fff;border-color:var(--purple);box-shadow:0 4px 14px rgba(139,76,240,.3)}
+.die.held .badge{background:var(--yellow);color:#0d0b18;border-color:var(--yellow);font-weight:800}
+.die.reroll{border-color:var(--yellow);border-style:dashed;background:transparent;color:var(--ink)}
+.die.reroll .badge{color:var(--yellow);border-color:var(--yellow)}
+.die.reroll.shaking{animation: shakeDice .3s linear infinite}
+@keyframes shakeDice{0%{transform:translate(0,0)}25%{transform:translate(1px,-1px)}50%{transform:translate(-1px,1px)}75%{transform:translate(1px,0)}100%{transform:translate(0,0)}}
+.legend{padding:8px 14px;display:flex;gap:12px;font-family:ui-monospace,monospace;font-size:10px;color:var(--muted);border-top:1px solid var(--line);background:rgba(0,0,0,.2)}
+.controls{padding:12px 14px;display:flex;gap:8px;flex-wrap:wrap;border-top:1px solid var(--line)}
+.btn{appearance:none;padding:9px 16px;font-weight:800;font-size:13px;cursor:pointer;border:1px solid transparent}
+.btn.primary{background:var(--purple);color:#fff}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line2)}
+.btn:disabled{opacity:.35}
+.controls .meta{margin-left:auto;font-family:ui-monospace,monospace;font-size:11px;color:var(--muted);align-self:center}
+/* right HUD stack */
+.hud{border:1px solid var(--line);background:var(--surface);overflow:hidden;display:flex;flex-direction:column}
+.hud-head{padding:10px 14px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);background: rgba(250,204,21,.06)}
+.hud-head h3{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.hud-head button{font-family:ui-monospace,monospace;font-size:11px;padding:6px 10px;cursor:pointer;border:1px solid var(--line2);background:var(--surface2);color:var(--ink);font-weight:700}
+.hud-head button.go{background:var(--yellow);color:#0d0b18;border-color:var(--yellow);font-weight:800}
+.stack{padding:10px;display:grid;gap:10px}
+.pcard{position:relative;display:grid;grid-template-columns:42px 1fr auto;gap:10px;align-items:center;background:#0d0b18;border:1px solid var(--line);padding:10px}
+.pcard.hill{border-color:var(--yellow);box-shadow: 0 0 0 1px rgba(250,204,21,.25)}
+.pcard.hill::after{content:"HILL";position:absolute;top:-7px;right:8px;background:var(--yellow);color:#0d0b18;font-family:ui-monospace,monospace;font-size:8px;font-weight:800;letter-spacing:.08em;padding:2px 6px}
+.pcard .avatar{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;font-weight:900;background:var(--surface2);border:1px solid var(--line2)}
+.pcard.hill .avatar{border-color:var(--yellow);background:rgba(250,204,21,.15)}
+.pcard .name{font-weight:800;font-size:13px}
+.pcard .sub{font-family:ui-monospace,monospace;font-size:10px;color:var(--muted)}
+.pcard .hp{font-family:ui-monospace,monospace;font-size:11px;text-align:right}
+.pcard .hp b{font-size:15px;color:var(--ink)}
+.pcard .bar{grid-column:1 / -1;height:3px;background:rgba(255,255,255,.08);position:relative;margin-top:2px}
+.pcard .bar i{position:absolute;left:0;top:0;bottom:0;background:var(--purple);transition:width .4s}
+.pcard.hill .bar i{background:var(--yellow)}
+.popup{position:absolute;left:50%;top:30%;transform:translate(-50%,-50%);font-weight:900;font-size:18px;pointer-events:none;opacity:0;z-index:3}
+.popup.dmg{color:var(--yellow);-webkit-text-stroke:1px #000}
+.popup.heal{color:#4ade80;-webkit-text-stroke:1px #000}
+.popup.coin{color:var(--yellow)}
+@keyframes popUp{0%{opacity:0;transform:translate(-50%,-10%) scale(.9)}15%{opacity:1;transform:translate(-50%,-50%) scale(1.08)}75%{opacity:1}100%{opacity:0;transform:translate(-50%,-90%)}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-4px)}40%{transform:translateX(4px)}60%{transform:translateX(-2px)}80%{transform:translateX(2px)}}
+.shaking{animation: shake .35s ease}
+.float{animation: popUp .9s ease forwards}
+.events{border-top:1px solid var(--line);padding:10px 12px;display:grid;gap:6px;background:rgba(0,0,0,.15)}
+.evt{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid transparent;background:rgba(255,255,255,.02);cursor:pointer}
+.evt.active{border-color:var(--yellow);background:rgba(250,204,21,.08)}
+.evt.done{opacity:.4}
+.evt .n{width:22px;height:22px;display:grid;place-items:center;background:var(--surface2);border:1px solid var(--line);font-family:ui-monospace,monospace;font-size:10px;font-weight:800;flex-shrink:0}
+.evt.active .n{background:var(--yellow);color:#0d0b18;border-color:var(--yellow)}
+.evt .txt{font-size:12px;line-height:1.3;flex:1}
+.evt .txt small{font-family:ui-monospace,monospace;font-size:10px;color:var(--muted);display:block}
+.log{border-top:1px solid var(--line);max-height:120px;overflow:auto;padding:8px 12px;background:rgba(0,0,0,.2)}
+.log .row{font-family:ui-monospace,monospace;font-size:11px;display:flex;gap:8px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.06)}
+.hint{font-family:ui-monospace,monospace;font-size:11px;color:var(--muted);padding:10px 12px;border-top:1px solid var(--line);line-height:1.4}
+</style>
+</head>
+<body>
+<div class="top">
+  <h1><b>HUD</b> Stack <span>— party list on the right, dice hold in place</span></h1>
+  <div class="meta">04 / 05 · DARK · PURPLE + YELLOW</div>
+</div>
+<div class="layout">
+  <div class="main">
+    <div class="main-head"><h2>Dice — tap to lock / shake</h2><span class="phase">ROLL</span></div>
+    <div class="pills" id="pills"></div>
+    <div class="dice-grid" id="diceGrid"></div>
+    <div class="legend"><span><b style="color:var(--purple)">■ HELD</b> purple solid</span><span><b style="color:var(--yellow)">◰ SHAKE</b> yellow dashed</span><span style="margin-left:auto" id="legendCount"></span></div>
+    <div class="controls">
+      <button class="btn primary" id="rerollBtn">Reroll shaking</button>
+      <button class="btn ghost" id="keepBtn">Keep all</button>
+      <span class="meta" id="ctrlMeta"></span>
+    </div>
+  </div>
+  <div class="hud">
+    <div class="hud-head"><h3>Party — replay hits here</h3><div style="display:flex;gap:6px"><button id="prevBtn">‹</button><button class="go" id="playBtn">▶ Play</button><button id="nextBtn">›</button></div></div>
+    <div class="stack" id="stack"></div>
+    <div class="events" id="events"></div>
+    <div class="log" id="log"></div>
+    <div class="hint">RPG party HUD: vertical stack, attacker bumps, defenders shake with floating damage. Dice stay in same 3×2 grid — no zones, just in-place state.</div>
+  </div>
+</div>
+<script>
+const FACES=[{k:'A',l:'⚔',s:'ATK'},{k:'H',l:'♥',s:'HEAL'},{k:'$',l:'◉',s:'NRG'},{k:'1',l:'1',s:'1'},{k:'2',l:'2',s:'2'},{k:'3',l:'3',s:'3'}];
+const PLAYERS=[
+  {name:'You', hp:7, max:10, pts:4, money:5, hill:false},
+  {name:'Gor', hp:6, max:10, pts:8, hill:true},
+  {name:'Mira', hp:10, max:10, pts:2, hill:false},
+  {name:'Karn', hp:3, max:10, pts:5, hill:false},
+];
+function rf(){return FACES[Math.floor(Math.random()*FACES.length)]}
+let dice=Array.from({length:6},rf);
+let held=[false,false,true,false,true,false];
+let left=2;
+const stackEl=document.getElementById('stack');
+function renderStack(){
+  stackEl.innerHTML='';
+  PLAYERS.forEach((p,i)=>{
+    const el=document.createElement('div');
+    el.className='pcard'+(p.hill?' hill':'');
+    el.id='pcard-'+i;
+    el.innerHTML=`
+      <div class="avatar">${p.name[0]}</div>
+      <div><div class="name">${p.name}</div><div class="sub">${p.hill?'ON HILL':'FIELD'} · ${p.pts}pts · $${p.money}</div></div>
+      <div class="hp"><b>${p.hp}</b>/${p.max}</div>
+      <div class="bar"><i style="width:${p.hp/p.max*100}%"></i></div>
+      <div class="popup" id="popup-${i}"></div>
+    `;
+    stackEl.appendChild(el);
+  });
+}
+const diceGrid=document.getElementById('diceGrid');
+const legendCount=document.getElementById('legendCount');
+const ctrlMeta=document.getElementById('ctrlMeta');
+const rerollBtn=document.getElementById('rerollBtn');
+function renderDice(){
+  diceGrid.innerHTML='';
+  let h=0;
+  dice.forEach((d,i)=>{
+    const b=document.createElement('button');
+    b.className='die '+(held[i]?'held':'reroll shaking');
+    b.innerHTML=`<span class="badge">${held[i]?'HELD':'SHAKE'}</span><span class="face">${d.l}</span><span class="lbl">${d.s} · ${d.k}</span>`;
+    b.onclick=()=>{ held[i]=!held[i]; renderDice(); };
+    diceGrid.appendChild(b);
+    if(held[i]) h++;
+  });
+  const r=6-h;
+  legendCount.textContent=`${h} held · ${r} shaking`;
+  ctrlMeta.textContent=`${h} locked · ${r} shaking`;
+  rerollBtn.disabled=left<=0||r===0;
+  rerollBtn.textContent=left>0?`Reroll ${r} shaking (${left} left)`:'No rerolls';
+}
+rerollBtn.onclick=()=>{
+  const idx=held.map((v,i)=>!v?i:-1).filter(i=>i>=0);
+  if(!idx.length||left<=0) return;
+  idx.forEach(i=> dice[i]=rf());
+  left--; renderDice(); addLog(`reroll ${idx.length} → ${idx.map(i=>dice[i].k).join(', ')}`);
+};
+document.getElementById('keepBtn').onclick=()=>{
+  addLog(`keep ${dice.map(d=>d.k).join(', ')}`);
+  held=[true,true,true,true,true,true]; renderDice();
+  setTimeout(()=>{ dice=dice.map(rf); held=[false,false,true,false,true,false]; left=2; renderDice(); },600);
+};
+// pills
+const pillsEl=document.getElementById('pills');
+const steps=[
+  {label:'ROLL', sub:'6 in place', hold:null},
+  {label:'HOLD', sub:'1·2·3 locked', hold:[2,4,5]},
+  {label:'REROLL', sub:'3 shake → 2·A·$', reroll:true},
+  {label:'ATTACK', sub:'You→Gor 2dmg', at:{attacker:0, defenders:[1], dmg:2}},
+  {label:'HEAL', sub:'♥+1 You', at:{heal:[0], amt:1}},
+  {label:'COIN', sub:'+$3', at:{coins:[0], amt:3}},
+  {label:'COUNTER', sub:'Gor→You 1dmg', at:{attacker:1, defenders:[0], dmg:1}},
+];
+function buildPills(){
+  // pills bar
+  const row=document.createElement('div'); row.style.display='flex'; row.style.gap='6px'; row.style.flex='1';
+  steps.forEach((s,i)=>{
+    const pill=document.createElement('div'); pill.className='pill'; pill.id='pill-'+i;
+    pill.innerHTML=`<i></i>`;
+    row.appendChild(pill);
+  });
+  pillsEl.appendChild(row);
+  const labels=document.createElement('div'); labels.className='pill-labels'; labels.style.width='100%';
+  // we already have pillsEl as container, add labels below? Instead create wrapper
+  // quick: append labels after
+  pillsEl.appendChild(labels);
+  // Actually pillsEl already has row, add labels div as second child
+  // populate labels
+  steps.forEach(s=>{
+    const span=document.createElement('span'); span.textContent=s.label; labels.appendChild(span);
+  });
+  // timeline list
+  const eventsEl=document.getElementById('events');
+  steps.forEach((s,i)=>{
+    const e=document.createElement('div'); e.className='evt'; e.id='evt-'+i;
+    e.innerHTML=`<div class="n">${i+1}</div><div class="txt"><b>${s.label}</b><small>${s.sub}</small></div><div style="font-size:12px">${s.at?.attacker!=null?'⚔':''}${s.at?.heal?'♥':''}${s.at?.coins?'◉':''}</div>`;
+    e.onclick=()=>go(i);
+    eventsEl.appendChild(e);
+  });
+  const logEl=document.getElementById('log');
+  steps.forEach((s,i)=>{
+    const r=document.createElement('div'); r.className='row';
+    r.innerHTML=`<span style="opacity:.4">#${i+1}</span><span>${s.label} — ${s.sub}</span>`;
+    logEl.appendChild(r);
+  });
+}
+const logEl=document.getElementById('log');
+function addLog(t){
+  const r=document.createElement('div'); r.className='row';
+  r.innerHTML=`<span style="color:var(--yellow);font-weight:800">now</span><span>${t}</span>`;
+  logEl.prepend(r);
+}
+function shake(idx){
+  const c=document.getElementById('pcard-'+idx);
+  c.classList.remove('shaking'); void c.offsetWidth; c.classList.add('shaking');
+  setTimeout(()=>c.classList.remove('shaking'),350);
+}
+function float(idx, text, cls){
+  const p=document.getElementById('popup-'+idx);
+  p.textContent=text; p.className='popup '+cls+' float';
+  setTimeout(()=>{ p.className='popup '+cls; p.textContent=''; },900);
+}
+let cur=-1, playing=false, tm=null;
+function go(i){
+  if(i<0||i>=steps.length) return;
+  if(cur>=0){
+    const prev=document.getElementById('evt-'+cur);
+    if(prev){ prev.classList.remove('active'); prev.classList.add('done'); }
+    const pillPrev=document.getElementById('pill-'+cur);
+    if(pillPrev){ pillPrev.classList.remove('active'); pillPrev.classList.add('done'); pillPrev.querySelector('i').style.width='100%'; }
+  }
+  cur=i;
+  const e=document.getElementById('evt-'+cur); e.classList.remove('done'); e.classList.add('active');
+  const pill=document.getElementById('pill-'+cur); pill.classList.add('active'); pill.querySelector('i').style.width='100%';
+  const s=steps[cur];
+  if(s.hold){ held=[false,false,false,false,false,false]; s.hold.forEach(j=>held[j]=true); renderDice(); }
+  if(s.reroll){ dice=dice.map(rf); renderDice(); }
+  if(s.at?.attacker!=null) shake(s.at.attacker);
+  if(s.at?.defenders) s.at.defenders.forEach(d=>{ shake(d); float(d, `-${s.at.dmg}`, 'dmg'); PLAYERS[d].hp=Math.max(0, PLAYERS[d].hp - s.at.dmg); });
+  if(s.at?.heal) s.at.heal.forEach(d=>{ float(d, `♥+${s.at.amt}`, 'heal'); PLAYERS[d].hp=Math.min(PLAYERS[d].max, PLAYERS[d].hp + s.at.amt); });
+  if(s.at?.coins) s.at.coins.forEach(d=>{ float(d, `+$${s.at.amt}`, 'coin'); PLAYERS[d].money+=s.at.amt; });
+  renderStack();
+}
+function play(){
+  if(playing) return;
+  playing=true; document.getElementById('playBtn').textContent='■ Stop';
+  function next(){
+    if(cur>=steps.length-1){ playing=false; document.getElementById('playBtn').textContent='▶ Play'; return; }
+    go(cur+1); tm=setTimeout(next, 800);
+  }
+  if(cur<0) go(0);
+  tm=setTimeout(next, 800);
+}
+document.getElementById('playBtn').onclick=()=>{
+  if(playing){ clearTimeout(tm); playing=false; document.getElementById('playBtn').textContent='▶ Play'; }
+  else { if(cur>=steps.length-1){ document.querySelectorAll('.evt').forEach(e=>e.classList.remove('active','done')); document.querySelectorAll('.pill').forEach(p=>{p.classList.remove('active','done'); p.querySelector('i').style.width='0%';}); cur=-1; PLAYERS[0].hp=7; PLAYERS[1].hp=6; PLAYERS[0].money=5; renderStack(); } play(); }
+};
+document.getElementById('prevBtn').onclick=()=>go(cur-1);
+document.getElementById('nextBtn').onclick=()=>go(cur+1);
+buildPills(); renderStack(); renderDice();
+</script>
+</body>
+</html>

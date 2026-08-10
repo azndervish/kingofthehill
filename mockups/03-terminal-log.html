@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>03 — Terminal Log</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0b0a14;--surface:#151328;--surface2:#1d1a34;--line:rgba(255,255,255,.08);--line2:rgba(255,255,255,.14);--purple:#8b4cf0;--yellow:#facc15;--ink:#f2f0ff;--muted:#8e89b0}
+body{font-family: ui-monospace, Menlo, monospace; background:var(--bg); color:var(--ink); min-height:100vh}
+.top{max-width:1120px;margin:0 auto;padding:18px 20px 10px;display:flex;justify-content:space-between;align-items:baseline;gap:16px;border-bottom:1px solid var(--line)}
+.top h1{font-size:14px;letter-spacing:.08em;text-transform:uppercase;font-weight:800}
+.top h1 b{color:var(--purple)}
+.top .meta{font-size:10px;letter-spacing:.08em;color:var(--muted);text-align:right}
+.wrap{max-width:1120px;margin:0 auto;padding:12px 20px 28px;display:grid;grid-template-columns: 1fr 1fr;gap:16px}
+@media(max-width:900px){.wrap{grid-template-columns:1fr}}
+.card{border:1px solid var(--line);background:var(--surface);overflow:hidden}
+.card-head{padding:10px 14px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);background:var(--surface2)}
+.card-head h2{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.card-head .badge{font-size:10px;background:var(--purple);color:#fff;padding:3px 7px;font-weight:700}
+.dice-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:14px}
+.die{border:1px solid var(--line2);background:#0b0a14;padding:12px 8px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;position:relative;min-height:86px}
+.die .face{font-size:22px;font-weight:900;letter-spacing:.04em}
+.die .lbl{font-size:9px;letter-spacing:.1em;margin-top:4px;opacity:.6}
+.die .state{position:absolute;top:6px;right:6px;font-size:7px;letter-spacing:.08em;padding:2px 5px;border:1px solid transparent}
+.die.held{background:var(--purple);color:#fff;border-color:var(--purple)}
+.die.held .state{background:var(--yellow);color:#0b0a14;border-color:var(--yellow);font-weight:800}
+.die.reroll{border-color:var(--yellow);border-style:dashed;color:var(--ink);background:transparent}
+.die.reroll .state{color:var(--yellow);border-color:var(--yellow)}
+.die.reroll.shaking{animation: shakeDice .3s linear infinite}
+@keyframes shakeDice{0%{transform:translate(0,0)}25%{transform:translate(1px,-1px)}50%{transform:translate(-1px,1px)}75%{transform:translate(1px,0)}100%{transform:translate(0,0)}}
+.legend{padding:8px 14px;display:flex;gap:12px;font-size:10px;color:var(--muted);border-top:1px solid var(--line);background:rgba(0,0,0,.2)}
+.controls{padding:12px 14px;display:flex;gap:8px;flex-wrap:wrap;border-top:1px solid var(--line)}
+.btn{appearance:none;padding:8px 14px;font-weight:800;font-size:12px;cursor:pointer;border:1px solid transparent;font-family:inherit}
+.btn.primary{background:var(--purple);color:#fff}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line2)}
+.btn:disabled{opacity:.35}
+.controls .meta{margin-left:auto;font-size:11px;color:var(--muted);align-self:center}
+/* right side: players + terminal */
+.stack{display:grid;gap:16px}
+.players{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px}
+.pcard{position:relative;background:#0b0a14;border:1px solid var(--line);padding:10px 10px 8px}
+.pcard.hill{border-color:var(--yellow);box-shadow:0 0 0 1px rgba(250,204,21,.3)}
+.pcard.hill::before{content:"HILL";position:absolute;top:0;right:0;background:var(--yellow);color:#0b0a14;font-size:8px;font-weight:800;letter-spacing:.08em;padding:2px 6px}
+.pcard .name{font-weight:800;font-size:12px}
+.pcard .hp{font-size:11px;margin-top:6px}
+.pcard .hp b{font-size:14px}
+.pcard .bar{height:3px;background:rgba(255,255,255,.1);margin-top:6px;position:relative}
+.pcard .bar i{position:absolute;left:0;top:0;bottom:0;background:var(--purple);transition:width .4s}
+.pcard.hill .bar i{background:var(--yellow)}
+.pcard .stats{font-size:10px;color:var(--muted);margin-top:4px}
+.popup{position:absolute;left:50%;top:36%;transform:translate(-50%,-50%);font-weight:900;font-size:18px;pointer-events:none;opacity:0}
+.popup.dmg{color:var(--yellow);-webkit-text-stroke:1px #000}
+.popup.heal{color:#4ade80;-webkit-text-stroke:1px #000}
+.popup.coin{color:var(--yellow)}
+@keyframes popUp{0%{opacity:0;transform:translate(-50%,-10%) scale(.9)}15%{opacity:1;transform:translate(-50%,-50%) scale(1.08)}75%{opacity:1}100%{opacity:0;transform:translate(-50%,-90%)}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-4px)}40%{transform:translateX(4px)}60%{transform:translateX(-2px)}80%{transform:translateX(2px)}}
+.shaking{animation: shake .35s ease}
+.float{animation: popUp .9s ease forwards}
+.terminal{border-top:1px solid var(--line);background:#0b0a14}
+.term-head{padding:8px 14px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);background:var(--surface2)}
+.term-head h3{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.term-head button{font-size:11px;padding:5px 10px;cursor:pointer;border:1px solid var(--line2);background:var(--surface);color:var(--ink);font-weight:700}
+.term-head button.go{background:var(--yellow);color:#0b0a14;border-color:var(--yellow)}
+.term-body{padding:10px 14px;min-height:220px;font-size:11px;line-height:1.6}
+.term-body .line{opacity:.35;transition: opacity .3s, color .3s, transform .3s; padding:4px 0; border-left:2px solid transparent; padding-left:8px}
+.term-body .line.active{opacity:1;color:var(--ink);border-left-color:var(--yellow);background:rgba(250,204,21,.06);transform:translateX(2px)}
+.term-body .line.done{opacity:.5}
+.term-body .line b{color:var(--yellow)}
+.term-body .line .muted{color:var(--muted)}
+.cursor{display:inline-block;width:7px;height:12px;background:var(--yellow);margin-left:4px;vertical-align:middle;animation: blink 1s steps(2) infinite}
+@keyframes blink{50%{opacity:0}}
+.progress{height:4px;background:rgba(255,255,255,.06);position:relative}
+.progress i{position:absolute;left:0;top:0;bottom:0;background:var(--yellow);width:0;transition:width .5s}
+.hint{font-size:11px;color:var(--muted);padding:10px 14px;border-top:1px solid var(--line);line-height:1.4;font-family: ui-sans, system-ui, sans-serif}
+</style>
+</head>
+<body>
+<div class="top">
+  <h1><b>Terminal</b> Log <span style="color:var(--muted);font-weight:400;letter-spacing:0;text-transform:none;font-size:12px;margin-left:8px">— monospace, in-place dice, typewriter replay</span></h1>
+  <div class="meta">03 / 05 · DARK · PURPLE + YELLOW</div>
+</div>
+<div class="wrap">
+  <div class="card">
+    <div class="card-head"><h2>Dice — tap to hold / shake</h2><span class="badge">ROLL</span></div>
+    <div class="dice-grid" id="diceGrid"></div>
+    <div class="legend"><span><b style="color:var(--purple)">■ HELD</b> purple</span><span><b style="color:var(--yellow)">◰ SHAKE</b> yellow dashed</span><span style="margin-left:auto" id="legendCount"></span></div>
+    <div class="controls">
+      <button class="btn primary" id="rerollBtn">Reroll shaking</button>
+      <button class="btn ghost" id="keepBtn">Keep all</button>
+      <span class="meta" id="ctrlMeta"></span>
+    </div>
+  </div>
+  <div class="stack">
+    <div class="card">
+      <div class="card-head"><h2>Players</h2><span class="badge" style="background:var(--yellow);color:#0b0a14">LIVE</span></div>
+      <div class="players" id="players"></div>
+    </div>
+    <div class="card terminal">
+      <div class="term-head"><h3>Turn.log — replay</h3><div style="display:flex;gap:6px"><button id="prevBtn">‹</button><button class="go" id="playBtn">▶ Run</button><button id="nextBtn">›</button></div></div>
+      <div class="progress"><i id="progress"></i></div>
+      <div class="term-body" id="termBody"></div>
+      <div class="hint">Typewriter terminal: each log line types in, attacker name highlighted, defenders shake with floating -dmg, heals float ♥. Dice never leave their slots.</div>
+    </div>
+  </div>
+</div>
+<script>
+const FACES=[{k:'A',l:'⚔',s:'ATK'},{k:'H',l:'♥',s:'HEAL'},{k:'$',l:'◉',s:'NRG'},{k:'1',l:'1',s:'1'},{k:'2',l:'2',s:'2'},{k:'3',l:'3',s:'3'}];
+const PLAYERS=[
+  {name:'You', hp:6, max:10, pts:4, money:5, hill:false},
+  {name:'Gor', hp:7, max:10, pts:7, hill:true},
+  {name:'Mira', hp:10, max:10, pts:2, hill:false},
+  {name:'Karn', hp:2, max:10, pts:5, hill:false},
+];
+function rf(){return FACES[Math.floor(Math.random()*FACES.length)]}
+let dice=Array.from({length:6},rf);
+let held=[false,true,false,false,true,false];
+let left=2;
+const playersEl=document.getElementById('players');
+function renderPlayers(){
+  playersEl.innerHTML='';
+  PLAYERS.forEach((p,i)=>{
+    const el=document.createElement('div');
+    el.className='pcard'+(p.hill?' hill':'');
+    el.id='pcard-'+i;
+    el.innerHTML=`<div class="name">${p.name}</div><div class="hp"><b>${p.hp}</b>/${p.max} HP</div><div class="bar"><i style="width:${p.hp/p.max*100}%"></i></div><div class="stats">$${p.money} · ${p.pts}pts</div><div class="popup" id="popup-${i}"></div>`;
+    playersEl.appendChild(el);
+  });
+}
+const diceGrid=document.getElementById('diceGrid');
+const legendCount=document.getElementById('legendCount');
+const ctrlMeta=document.getElementById('ctrlMeta');
+const rerollBtn=document.getElementById('rerollBtn');
+function renderDice(){
+  diceGrid.innerHTML='';
+  let h=0;
+  dice.forEach((d,i)=>{
+    const b=document.createElement('button');
+    b.className='die '+(held[i]?'held':'reroll shaking');
+    b.innerHTML=`<span class="state">${held[i]?'HELD':'SHAKE'}</span><span class="face">${d.l}</span><span class="lbl">${d.s} · ${d.k}</span>`;
+    b.onclick=()=>{ held[i]=!held[i]; renderDice(); };
+    diceGrid.appendChild(b);
+    if(held[i]) h++;
+  });
+  const r=6-h;
+  legendCount.textContent=`${h} held · ${r} shaking`;
+  ctrlMeta.textContent=`${h} locked · ${r} shaking`;
+  rerollBtn.disabled=left<=0||r===0;
+  rerollBtn.textContent=left>0?`Reroll ${r} shaking (${left} left)`:'No rerolls';
+}
+rerollBtn.onclick=()=>{
+  const idx=held.map((v,i)=>!v?i:-1).filter(i=>i>=0);
+  if(!idx.length||left<=0) return;
+  idx.forEach(i=> dice[i]=rf());
+  left--; renderDice(); addLog(`reroll ${idx.length} → ${idx.map(i=>dice[i].k).join(' ')}`);
+};
+document.getElementById('keepBtn').onclick=()=>{
+  addLog(`keep ${dice.map(d=>d.k).join(' ')}`);
+  held=[true,true,true,true,true,true]; renderDice();
+  setTimeout(()=>{ dice=dice.map(rf); held=[false,true,false,false,true,false]; left=2; renderDice(); },600);
+};
+const steps=[
+  {text:`<b>You</b> rolled <span class="muted">A H $ 1 2 3</span>`, at:null},
+  {text:`<b>You</b> held <span class="muted">1 2 3</span> <span class="muted">— purple lock</span>`, at:null, hold:[3,4,5]},
+  {text:`reroll <span class="muted">A H $</span> → <b>2 A $</b>`, at:null, reroll:true},
+  {text:`<b>You</b> attacks <b>Gor</b> for <b>2 dmg</b>`, at:{attacker:0, defenders:[1], dmg:2}},
+  {text:`<b>You</b> heals <b>+1 ♥</b>`, at:{heal:[0], amt:1}},
+  {text:`<b>You</b> gains <b>+$3</b>`, at:{coins:[0], amt:3}},
+  {text:`<b>Gor</b> counter <b>1 dmg</b> to <b>You</b>`, at:{attacker:1, defenders:[0], dmg:1}},
+];
+const termBody=document.getElementById('termBody');
+const progress=document.getElementById('progress');
+function build(){
+  steps.forEach((s,i)=>{
+    const l=document.createElement('div'); l.className='line'; l.id='line-'+i;
+    l.innerHTML=`<span style="opacity:.4">${String(i+1).padStart(2,'0')}</span> ${s.text}`;
+    termBody.appendChild(l);
+  });
+  // cursor
+  const cur=document.createElement('span'); cur.className='cursor'; cur.id='cursor'; termBody.appendChild(cur);
+}
+function addLog(t){
+  const l=document.createElement('div'); l.className='line active';
+  l.innerHTML=`<span style="color:var(--yellow)">›</span> ${t}`;
+  termBody.insertBefore(l, document.getElementById('cursor'));
+}
+function shake(idx){
+  const c=document.getElementById('pcard-'+idx);
+  c.classList.remove('shaking'); void c.offsetWidth; c.classList.add('shaking');
+  setTimeout(()=>c.classList.remove('shaking'),350);
+}
+function float(idx, text, cls){
+  const p=document.getElementById('popup-'+idx);
+  p.textContent=text; p.className='popup '+cls+' float';
+  setTimeout(()=>{ p.className='popup '+cls; p.textContent=''; },900);
+}
+let cur=-1, playing=false, tm=null;
+function go(i){
+  if(i<0||i>=steps.length) return;
+  if(cur>=0){
+    const prev=document.getElementById('line-'+cur);
+    if(prev){ prev.classList.remove('active'); prev.classList.add('done'); }
+  }
+  cur=i;
+  const el=document.getElementById('line-'+cur); el.classList.remove('done'); el.classList.add('active');
+  progress.style.width=((cur+1)/steps.length*100)+'%';
+  const s=steps[cur];
+  if(s.hold){ held=[false,false,false,false,false,false]; s.hold.forEach(j=>held[j]=true); renderDice(); }
+  if(s.reroll){ dice=dice.map(rf); renderDice(); }
+  if(s.at?.attacker!=null) shake(s.at.attacker);
+  if(s.at?.defenders) s.at.defenders.forEach(d=>{ shake(d); float(d, `-${s.at.dmg}`, 'dmg'); PLAYERS[d].hp=Math.max(0, PLAYERS[d].hp - s.at.dmg); });
+  if(s.at?.heal) s.at.heal.forEach(d=>{ float(d, `♥+${s.at.amt}`, 'heal'); PLAYERS[d].hp=Math.min(PLAYERS[d].max, PLAYERS[d].hp + s.at.amt); });
+  if(s.at?.coins) s.at.coins.forEach(d=>{ float(d, `+$${s.at.amt}`, 'coin'); PLAYERS[d].money+=s.at.amt; });
+  renderPlayers();
+}
+function play(){
+  if(playing) return;
+  playing=true; document.getElementById('playBtn').textContent='■ Stop';
+  function next(){
+    if(cur>=steps.length-1){ playing=false; document.getElementById('playBtn').textContent='▶ Run'; return; }
+    go(cur+1); tm=setTimeout(next, 800);
+  }
+  if(cur<0) go(0);
+  tm=setTimeout(next, 800);
+}
+document.getElementById('playBtn').onclick=()=>{
+  if(playing){ clearTimeout(tm); playing=false; document.getElementById('playBtn').textContent='▶ Run'; }
+  else { if(cur>=steps.length-1){ document.querySelectorAll('.line').forEach(l=>l.classList.remove('active','done')); progress.style.width='0%'; cur=-1; PLAYERS[0].hp=6; PLAYERS[1].hp=7; PLAYERS[0].money=5; renderPlayers(); } play(); }
+};
+document.getElementById('prevBtn').onclick=()=>go(cur-1);
+document.getElementById('nextBtn').onclick=()=>go(cur+1);
+build(); renderPlayers(); renderDice();
+</script>
+</body>
+</html>
